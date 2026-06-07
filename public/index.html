@@ -2059,6 +2059,20 @@ function navTap(el) {
   el.classList.add('on');
 }
 
+function shTab(el, name) {
+  document.querySelectorAll('.sh-tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.sh-pane').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  const pane = document.getElementById('sh-'+name);
+  if (pane) pane.classList.add('on');
+}
+
+function chipTap(el, sym) {
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  openSheet(sym);
+}
+
 async function doSearch() {
   const t = document.getElementById('tickIn').value.trim().toUpperCase();
   if (!t) return;
