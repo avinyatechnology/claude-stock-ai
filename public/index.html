@@ -1774,11 +1774,12 @@ function buildAnalysis(sym, snap, bars) {
     </div>`;
 
   // ── ANALYST CONSENSUS — rich per-stock data ──
+  const anFallbackTarget = px ? Math.round(px*1.12) : 0;
   const an = analystDB[sym] || {
     buy: 0, hold: 0, sell: 0,
-    target: px ? Math.round(px*1.12) : 0,
+    target: anFallbackTarget,
     rating: 'Limited Coverage',
-    upside: px && an?.target ? ((an.target-px)/px*100).toFixed(0)+'%' : '—',
+    upside: '—',
     topCall: 'Limited analyst coverage for this ticker',
     recentAction: 'Check Bloomberg or Yahoo Finance for latest analyst updates',
     keyRisk: 'Insufficient coverage data — conduct your own research',
