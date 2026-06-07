@@ -1,89 +1,130 @@
-# Claude Stock AI — Alpaca Trading App
+# GFinHub — AI Stock Intelligence Platform
 
-Mobile-first stock analysis app powered by Claude Stock AI rules + Alpaca API.
-Your API keys stay secure on the server. The browser never sees them.
+Professional mobile stock analysis app powered by Claude Stock AI rules + Alpaca Markets API.
+Live market data, AI-generated verdicts, institutional flow analysis, news sentiment, and market direction — all in a clean mobile interface.
 
 ---
 
-## Deploy to Render in 5 steps
+## What this app does
 
-### Step 1 — Push this folder to GitHub
-1. Go to github.com → New repository → name it `claude-stock-ai`
-2. Upload all files from this folder (drag and drop works)
-3. Click Commit changes
+- **Market Direction** — live overview of S&P 500, NASDAQ tech, and key sector performance with breadth scoring
+- **News Sentiment** — live financial news pulled from Alpaca News API with AI sentiment scoring (Bullish / Bearish / Neutral)
+- **Stock Analysis** — tap any ticker for a full AI analyst verdict: BUY / HOLD / SELL with plain-English reasoning
+- **AI Analyst Verdict** — explains why a stock is selling off or rallying, institutional flow signals, market context, and trend health
+- **Indicators** — professional plain-English insights replacing raw numbers: Price Trend, Momentum, Volume & Institutional Activity, Volatility
+- **Outlook tab** — Today's and This Week's narrative outlook plus 3-month Bull / Base / Bear price targets
+- **Watchlist** — NVDA, AAPL, TSLA, META, MSFT, AMD, SPY with live quotes and quick AI signals
 
-### Step 2 — Create a Render account
-Go to render.com → Sign up free (no credit card needed)
+---
 
-### Step 3 — Create a new Web Service
-1. Click **New** → **Web Service**
-2. Connect your GitHub account
-3. Select the `claude-stock-ai` repository
-4. Render auto-detects the settings from render.yaml — do NOT change anything
+## Deploy to Render — 4 steps
 
-### Step 4 — Add your Alpaca API keys (this is the only thing you fill in)
-In the Render dashboard after creating the service:
-1. Click **Environment** in the left sidebar
-2. Add these two variables:
+### Step 1 — Push to GitHub
+1. Go to github.com → New repository → name: `gfinhub`
+2. Upload all files from this folder (drag and drop the contents, not the folder itself)
+3. Click **Commit changes**
 
-   | Key | Value |
-   |-----|-------|
-   | ALPACA_KEY | your Alpaca API Key ID |
-   | ALPACA_SECRET | your Alpaca Secret Key |
+### Step 2 — Create Render Web Service
+1. Go to render.com → **New** → **Web Service**
+2. Connect your GitHub account → select `gfinhub` repo
+3. Render auto-reads `render.yaml` — do NOT change any settings
+4. Click **Create Web Service**
 
-   ALPACA_MODE is already set to `paper` in render.yaml
+### Step 3 — Add your Alpaca API keys (only thing you fill in)
+In Render dashboard → **Environment** → Add these variables:
 
-3. Click **Save Changes**
+| Key | Value |
+|-----|-------|
+| `ALPACA_KEY` | Your Alpaca API Key ID |
+| `ALPACA_SECRET` | Your Alpaca Secret Key |
+| `ALPACA_MODE` | `paper` |
 
-### Step 5 — Open your app
-Render gives you a URL like: `https://claude-stock-ai.onrender.com`
-Open it on your phone — the app loads, connects to Alpaca, and shows live data.
+Click **Save Changes** → Render restarts automatically.
+
+### Step 4 — Open on your phone
+Your live URL: `https://gfinhub.onrender.com` (or whatever Render assigns)
+
+**iPhone:** Safari → Share → Add to Home Screen → GFinHub → Add
+**Android:** Chrome → three dots → Add to Home Screen → Add
 
 ---
 
 ## Get your free Alpaca API keys
-1. Go to alpaca.markets → Sign up free
-2. Dashboard → Paper Trading → API Keys → Generate
-3. Copy the Key ID and Secret Key into Render environment variables
+1. alpaca.markets → Sign up free
+2. Dashboard → **Paper Trading** → **API Keys** → Generate
+3. Copy Key ID and Secret → paste into Render Environment
 
 ---
 
-## How it works (security model)
+## API endpoints (14 total)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Server health + key status check |
+| `GET /api/account` | Portfolio value, buying power, P&L |
+| `GET /api/positions` | Open positions with unrealized P&L |
+| `GET /api/quotes?symbols=` | Live snapshots: price, VWAP, volume, bars |
+| `GET /api/bars/:symbol` | Historical OHLCV bar data |
+| `GET /api/latest/:symbol` | Latest trade for a ticker |
+| `GET /api/clock` | Market open/closed status + next open/close |
+| `GET /api/calendar` | Trading calendar |
+| `GET /api/orders` | Order history |
+| `POST /api/orders` | Place an order |
+| `DELETE /api/orders/:id` | Cancel an order |
+| `GET /api/watchlists` | Alpaca watchlists |
+| `GET /api/portfolio/history` | Equity curve history |
+| `GET /api/news?symbols=` | Live financial news with ticker association |
+
+---
+
+## Security model
 
 ```
 Your Phone (browser)
-      ↓  calls /api/account, /api/quotes, /api/orders
+      ↓  calls /api/* — no keys ever in browser
 Your Render Server (server/index.js)
-      ↓  adds ALPACA_KEY + ALPACA_SECRET headers
-Alpaca API (alpaca.markets)
+      ↓  adds ALPACA_KEY + ALPACA_SECRET server-side
+Alpaca Markets API
 ```
 
-Your API keys are stored only in Render's encrypted environment variables.
-They never appear in the browser, in the HTML, or in any code file.
+API keys live only in Render's encrypted environment variables. Never exposed to the browser.
 
 ---
 
 ## File structure
+
 ```
-claude-stock-ai/
+gfinhub/
 ├── server/
-│   └── index.js        ← Express backend (proxy to Alpaca)
+│   └── index.js        ← Express backend (Alpaca proxy, 14 endpoints)
 ├── public/
-│   └── index.html      ← Mobile app (served by Express)
+│   └── index.html      ← Full mobile app (served by Express)
 ├── package.json
-├── render.yaml         ← Render deployment config (no changes needed)
-└── .gitignore
+├── render.yaml         ← Render auto-deploy config (no changes needed)
+├── .gitignore
+└── README.md
 ```
 
 ---
 
 ## Claude Stock AI rules applied
-- 30+ technical indicators (RSI, MACD, VWAP, Bollinger Bands, ATR, SMA, EMA, OBV, RVOL)
-- 5-category signal scoring system
-- Day-by-day weekly scenario with holiday detection
-- ATR-based stop sizing (1.5× ATR rule)
-- Position sizer with 1-2% account risk enforcement
-- Intraday timing rules (avoid open chaos, lunchtime trap, Power Hour)
-- RSI overbought entry rule enforced
-- Long + short trade setups with R/R ratio
-- Live order placement via Alpaca paper/live trading API
+
+All analysis follows the Claude Stock AI framework v2.0:
+- 30+ technical indicators across 6 categories
+- Institutional flow analysis (VWAP, volume, RVOL)
+- Stock-specific sell-off and rally explanations
+- Market breadth and relative strength context
+- AI sentiment scoring on live news
+- Professional plain-English insights (not raw numbers)
+- 3-month Bull / Base / Bear price projections
+- Analyst consensus with Buy / Hold / Sell breakdown
+
+---
+
+## Disclaimer
+
+GFinHub is an AI-powered stock analysis platform for informational and educational purposes only.
+Not financial advice. Not a registered investment advisor. Not FDIC insured.
+Always conduct your own research and consult a qualified financial advisor before making investment decisions.
+
+© 2026 GFinHub

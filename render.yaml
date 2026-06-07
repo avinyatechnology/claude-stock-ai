@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: claude-stock-ai
+    name: gfinhub
     env: node
     plan: free
     buildCommand: npm install
