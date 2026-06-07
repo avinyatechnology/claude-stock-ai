@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: claude-stock-ai
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ALPACA_KEY
+        sync: false
+      - key: ALPACA_SECRET
+        sync: false
+      - key: ALPACA_MODE
+        value: paper
+      - key: NODE_ENV
+        value: production
