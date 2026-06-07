@@ -202,6 +202,46 @@ app.get('/api/portfolio/history', async (req, res) => {
   }
 });
 
+// ── NEWS (Alpaca News API) ────────────────────────────────────────────────────
+// Alpaca provides real-time financial news with ticker associations
+// Endpoint: GET /v1beta1/news
+// Params: symbols (comma-separated), limit (max 50), sort (desc = newest first)
+app.get('/api/news', async (req, res) => {
+  try {
+    const symbols = req.query.symbols || 'NVDA,AAPL,TSLA,META,MSFT,AMD,SPY';
+    const limit   = Math.min(parseInt(req.query.limit) || 10, 20);
+
+    // Alpaca News API uses data.alpaca.markets/v1beta1/news
+    // Returns articles sorted by most recent first
+    // Also fetch general market news (no symbol filter) for macro context
+    const [tickerNews, marketNews] = await Promise.all([
+      fetch(
+        `${DATA_BASE}/v1beta1/news?symbols=${symbols}&limit=${limit}&sort=desc&include_content=false`,
+        { headers: alpacaHeaders() }
+      ).then(r => r.json()).catch(() => null),
+      fetch(
+        `${DATA_BASE}/v1beta1/news?limit=5&sort=desc&include_content=false`,
+        { headers: alpacaHeaders() }
+      ).then(r => r.json()).catch(() => null),
+    ]);
+
+    // Merge and deduplicate by id
+    const allArticles = [
+      ...(tickerNews?.news || []),
+      ...(marketNews?.news  || []),
+    ];
+    const seen = new Set();
+    const unique = allArticles
+      .filter(a => { if (seen.has(a.id)) return false; seen.add(a.id); return true; })
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, limit);
+
+    res.json({ news: unique, source: 'alpaca', count: unique.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message, news: [] });
+  }
+});
+
 // ── START ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`Claude Stock AI server running on port ${PORT}`);
