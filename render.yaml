@@ -12,5 +12,11 @@ services:
         sync: false
       - key: ALPACA_MODE
         value: paper
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: FMP_API_KEY
+        sync: false
       - key: NODE_ENV
         value: production

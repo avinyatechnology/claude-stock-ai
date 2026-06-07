@@ -12,6 +12,7 @@ const ALPACA_SECRET = process.env.ALPACA_SECRET;
 const ALPACA_MODE   = process.env.ALPACA_MODE || 'paper';
 const OPENAI_KEY    = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL  = process.env.OPENAI_MODEL || 'gpt-4o';
+const FMP_KEY       = process.env.FMP_API_KEY; // financialmodelingprep.com free key
 
 const TRADING_BASE = ALPACA_MODE === 'live'
   ? 'https://api.alpaca.markets'
@@ -39,8 +40,9 @@ app.get('/health', (req, res) => {
     mode:     ALPACA_MODE,
     keyset:   !!ALPACA_KEY && !!ALPACA_SECRET,
     openai:   !!OPENAI_KEY,
+    fmp:      !!FMP_KEY,
     model:    OPENAI_MODEL,
-    version:  '3.0.0',
+    version:  '4.0.0',
   });
 });
 
@@ -105,10 +107,12 @@ app.get('/api/bars/:symbol', async (req, res) => {
     const { symbol } = req.params;
     const tf    = req.query.timeframe || '1D';
     const limit = req.query.limit     || '30';
-    const start = req.query.start     || new Date(Date.now() - 30*86400000).toISOString();
-    const end   = req.query.end       || new Date().toISOString();
+    // Support up to 220 days for SMA200 calculation
+    const days  = Math.min(parseInt(limit), 220);
+    const start = req.query.start || new Date(Date.now() - days*1.5*86400000).toISOString();
+    const end   = req.query.end   || new Date().toISOString();
     const r = await fetch(
-      `${DATA_BASE}/v2/stocks/${symbol}/bars?timeframe=${tf}&start=${start}&end=${end}&limit=${limit}&feed=iex`,
+      `${DATA_BASE}/v2/stocks/${symbol}/bars?timeframe=${tf}&start=${start}&end=${end}&limit=${days}&feed=iex`,
       { headers: alpacaHeaders() }
     );
     res.status(r.status).json(await r.json());
@@ -192,6 +196,117 @@ app.get('/api/news', async (req, res) => {
       .slice(0, limit);
     res.json({ news: unique, source: 'alpaca', count: unique.length });
   } catch (e) { res.status(500).json({ error: e.message, news: [] }); }
+});
+
+// ── ANALYST DATA (Financial Modeling Prep) ───────────────────────────────────
+// Returns: analyst ratings, price target, earnings info, PE ratio, revenue growth
+// Free API key from financialmodelingprep.com — add FMP_API_KEY to Render env
+app.get('/api/analyst/:symbol', async (req, res) => {
+  const sym = req.params.symbol.toUpperCase();
+
+  if (!FMP_KEY) {
+    return res.status(503).json({ error: 'FMP_API_KEY not set', noKey: true });
+  }
+
+  try {
+    // Fetch all data in parallel from FMP
+    const [
+      ratingsData,
+      targetData,
+      profileData,
+      earningsData,
+    ] = await Promise.all([
+      // Analyst ratings consensus (buy/hold/sell counts)
+      fetch(`https://financialmodelingprep.com/api/v3/analyst-stock-recommendations/${sym}?limit=1&apikey=${FMP_KEY}`)
+        .then(r => r.json()).catch(() => null),
+
+      // Analyst price target consensus
+      fetch(`https://financialmodelingprep.com/api/v4/price-target-consensus?symbol=${sym}&apikey=${FMP_KEY}`)
+        .then(r => r.json()).catch(() => null),
+
+      // Company profile (PE ratio, industry, market cap, description)
+      fetch(`https://financialmodelingprep.com/api/v3/profile/${sym}?apikey=${FMP_KEY}`)
+        .then(r => r.json()).catch(() => null),
+
+      // Earnings calendar — next earnings date + EPS estimate
+      fetch(`https://financialmodelingprep.com/api/v3/earning_calendar?symbol=${sym}&apikey=${FMP_KEY}`)
+        .then(r => r.json()).catch(() => null),
+    ]);
+
+    // Parse ratings
+    const rating    = Array.isArray(ratingsData) ? ratingsData[0] : null;
+    const target    = Array.isArray(targetData)  ? targetData[0]  : null;
+    const profile   = Array.isArray(profileData) ? profileData[0] : null;
+
+    // Find next upcoming earnings
+    const now = Date.now();
+    const nextEarnings = Array.isArray(earningsData)
+      ? earningsData
+          .filter(e => new Date(e.date) > now)
+          .sort((a,b) => new Date(a.date) - new Date(b.date))[0]
+      : null;
+
+    // Build clean response
+    const result = {
+      symbol: sym,
+
+      // Analyst consensus
+      buy:    rating?.analystRatingsbuy         || 0,
+      hold:   rating?.analystRatingsHold        || 0,
+      sell:   rating?.analystRatingsSell        ||
+              (rating?.analystRatingsStrongSell || 0),
+      strongBuy:  rating?.analystRatingsStrongBuy  || 0,
+      strongSell: rating?.analystRatingsStrongSell || 0,
+
+      // Price target
+      targetHigh:   target?.targetHigh   || null,
+      targetLow:    target?.targetLow    || null,
+      targetMean:   target?.targetConsensus || target?.targetMean || null,
+      targetMedian: target?.targetMedian || null,
+
+      // Overall rating text
+      rating: rating?.analystRatingsStrongBuy > (rating?.analystRatingsbuy||0)
+        ? 'Strong Buy'
+        : (rating?.analystRatingsbuy||0) > (rating?.analystRatingsHold||0)
+        ? 'Buy'
+        : (rating?.analystRatingsHold||0) > ((rating?.analystRatingsSell||0)+(rating?.analystRatingsStrongSell||0))
+        ? 'Hold'
+        : 'Sell',
+
+      // Company fundamentals from profile
+      peRatio:       profile?.pe           ? parseFloat(profile.pe).toFixed(1)+'×'   : null,
+      revGrowth:     null, // computed from income statement if needed
+      sector:        profile?.sector       || null,
+      industry:      profile?.industry     || null,
+      marketCap:     profile?.mktCap       || null,
+      description:   profile?.description  || null,
+      ceo:           profile?.ceo          || null,
+      employees:     profile?.fullTimeEmployees || null,
+      website:       profile?.website      || null,
+
+      // Next earnings
+      earningsDate:  nextEarnings?.date    || null,
+      earningsEPS:   nextEarnings?.epsEstimated
+        ? '$' + parseFloat(nextEarnings.epsEstimated).toFixed(2) + ' EPS est'
+        : null,
+      earningsRevenue: nextEarnings?.revenueEstimated
+        ? '$' + (nextEarnings.revenueEstimated/1e9).toFixed(1) + 'B est'
+        : null,
+
+      source: 'financialmodelingprep.com',
+    };
+
+    // Combine buy + strongBuy, sell + strongSell for display
+    result.totalBuy  = result.buy  + result.strongBuy;
+    result.totalSell = result.sell + result.strongSell;
+    result.totalHold = result.hold;
+    result.totalAnalysts = result.totalBuy + result.totalHold + result.totalSell;
+
+    res.json(result);
+  } catch (e) {
+    console.error('FMP error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ── OPENAI AI ANALYSIS ────────────────────────────────────────────────────────

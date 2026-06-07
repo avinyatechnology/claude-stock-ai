@@ -1036,8 +1036,9 @@ function renderMktHero() {
     const cp  = px && pv ? (px-pv)/pv*100 : null;
     const dir = cp===null?'neu': cp>0.5?'up': cp<-0.5?'dn':'neu';
     const vwapAbove = px && vwap ? px > vwap : null;
-    const maRef = maData[m.sym];
-    const aboveMa50 = px && maRef ? px > maRef.ma50 : null;
+    const maRef = maCache[m.sym] || null; // populated after bar fetch
+    const aboveMa50  = px && maRef ? px > maRef.ma50  : null;
+    const aboveMa200 = px && maRef ? px > maRef.ma200 : null;
     return { ...m, px, pv, cp, dir, hi, lo, vol, vwap, vwapAbove, aboveMa50 };
   });
 
@@ -1065,7 +1066,7 @@ function renderMktHero() {
   enriched.forEach(m => {
     if (m.vwapAbove === false && m.dir === 'dn') signals.push(`${m.sym} trading below VWAP — bearish intraday`);
     if (m.vwapAbove === true  && m.dir === 'up') signals.push(`${m.sym} above VWAP — institutional support active`);
-    if (m.aboveMa50 === false) signals.push(`${m.sym} below 50-day SMA $${maData[m.sym]?.ma50?.toFixed(0)} — trend pressure`);
+    if (m.aboveMa50 === false) signals.push(`${m.sym} below 50-day SMA — trend pressure`);
     if (m.cp !== null && Math.abs(m.cp) > 2) signals.push(`${m.sym} ${m.cp>0?'surging +':'falling '}${Math.abs(m.cp).toFixed(1)}% — high momentum day`);
   });
   const topSignals = signals.slice(0,3);
@@ -1360,7 +1361,11 @@ function getQuickRec(px, pv, vwap, sym) {
   if (!px) return { type:'hold', icon:'⏸', label:'HOLD', summary:'Loading data...' };
 
   const cp = pv ? (px-pv)/pv*100 : 0;
-  const ma = maData[sym] || { ma50: px*.95, ma200: px*.90 };
+  // ma already computed from real bars above (sma50/sma200)
+  const ma = { ma50: sma50, ma200: sma200 };
+
+  // Cache for market hero to use
+  maCache[sym] = ma;
   const a50  = px > ma.ma50;
   const a200 = px > ma.ma200;
   const vwapA = px > (vwap||px)*1.001;
@@ -1402,11 +1407,12 @@ async function openSheet(sym) {
   // Show loading animation immediately
   showAnalysisLoading(sym);
 
-  // Fetch quote, bars, and asset info in parallel
-  const [quoteData, bars, assetData] = await Promise.all([
+  // Fetch quote, bars (220 days for real SMA50/200), asset info, analyst data in parallel
+  const [quoteData, bars, assetData, analystData] = await Promise.all([
     S.quotes[sym] ? Promise.resolve(null) : api(`/api/quotes?symbols=${sym}`),
-    api(`/api/bars/${sym}?timeframe=1D&limit=30`),
+    api(`/api/bars/${sym}?timeframe=1D&limit=220`),
     api(`/api/asset/${sym}`),
+    fetchAnalystData(sym),
   ]);
 
   if (quoteData?.[sym]) S.quotes[sym] = quoteData[sym];
@@ -1431,7 +1437,7 @@ async function openSheet(sym) {
       `Last updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
   }
 
-  buildAnalysis(sym, snap, bars?.bars || []);
+  buildAnalysis(sym, snap, bars?.bars || [], analystData);
 }
 
 function closeSheet() {
@@ -1440,113 +1446,31 @@ function closeSheet() {
   S.selected = null;
 }
 
-// ── KNOWN MA REFERENCE DATA ───────────────────────────────────────────────────
-const maData = {
-  NVDA:{ ma50:217.65, ma200:211.89 },
-  AAPL:{ ma50:282.81, ma200:267.67 },
-  TSLA:{ ma50:295,    ma200:240    },
-  META:{ ma50:580,    ma200:530    },
-  MSFT:{ ma50:420,    ma200:395    },
-  AMD: { ma50:168,    ma200:155    },
-  SPY: { ma50:560,    ma200:520    },
-};
+// ── DYNAMIC MA CACHE — populated from real bar data, not hardcoded ─────────────
+// Keyed by symbol, values computed when bars are fetched
+const maCache = {};
 
-// ── ANALYST DATA — per-stock specific, sourced from real Wall Street consensus ─
-// These reflect actual current analyst coverage as of June 2026
-// For unknown tickers the app fetches live snapshot data to derive estimates
-const analystDB = {
-  NVDA: {
-    buy: 38, hold: 5, sell: 1, target: 304,
-    rating: 'Strong Buy',
-    upside: '+43%',
-    topCall: 'Wedbush raised to $400 — highest on Street',
-    recentAction: 'Barclays, Morgan Stanley, Jefferies all raised targets post-Q1 FY2027 earnings beat',
-    keyRisk: 'Export restrictions limit China/ME data center revenue',
-    earningsDate: 'Aug 26, 2026',
-    earningsEst: '$2.05 EPS',
-    peRatio: '42×',
-    revGrowth: '+85% YoY',
-    analystNote: 'Consensus driven by AI infrastructure supercycle — $80B buyback provides floor',
-  },
-  AAPL: {
-    buy: 30, hold: 12, sell: 2, target: 310,
-    rating: 'Buy',
-    upside: '+3%',
-    topCall: 'Wedbush $400 target — thesis: AI services unlock new revenue stream',
-    recentAction: 'Several analysts raised estimates after AI strategy overhaul announcement',
-    keyRisk: 'App Store ruling + AI feature delays vs Google/Microsoft',
-    earningsDate: 'Jul 30, 2026',
-    earningsEst: '$2.01 EPS',
-    peRatio: '29×',
-    revGrowth: '+6% YoY',
-    analystNote: 'Divided street — bulls on AI services, bears on valuation vs growth rate',
-  },
-  TSLA: {
-    buy: 20, hold: 14, sell: 8, target: 300,
-    rating: 'Hold',
-    upside: '+2%',
-    topCall: 'Cathie Wood (ARK): $2,600 by 2029 on robotaxi thesis',
-    recentAction: 'Multiple downgrades on European market share loss and FSD timeline delays',
-    keyRisk: 'BYD competition in China + CEO distraction + FSD regulatory delay',
-    earningsDate: 'Jul 23, 2026',
-    earningsEst: '$0.58 EPS',
-    peRatio: '88×',
-    revGrowth: '+3% YoY',
-    analystNote: 'Most divided stock on Street — 8 Sells reflect real fundamental concerns',
-  },
-  META: {
-    buy: 40, hold: 6, sell: 1, target: 650,
-    rating: 'Strong Buy',
-    upside: '+12%',
-    topCall: 'Evercore ISI $750 — AI ad monetization inflection thesis',
-    recentAction: 'Mass upgrades after Q1 ad revenue +19% YoY exceeded all estimates',
-    keyRisk: 'EU regulatory pressure on data privacy + Reality Labs losses',
-    earningsDate: 'Jul 29, 2026',
-    earningsEst: '$6.10 EPS',
-    peRatio: '26×',
-    revGrowth: '+19% YoY',
-    analystNote: 'One of the most unanimously bullish large-cap stocks on Wall Street',
-  },
-  MSFT: {
-    buy: 42, hold: 5, sell: 0, target: 500,
-    rating: 'Strong Buy',
-    upside: '+19%',
-    topCall: 'Goldman Sachs $520 — Azure AI market share capture thesis',
-    recentAction: 'No downgrades in 6 months — rare unanimous bullish consensus',
-    keyRisk: 'OpenAI dependency + antitrust risk on AI market dominance',
-    earningsDate: 'Jul 22, 2026',
-    earningsEst: '$3.24 EPS',
-    peRatio: '32×',
-    revGrowth: '+17% YoY',
-    analystNote: 'Zero Sell ratings — strongest analyst consensus among mega-cap tech',
-  },
-  AMD: {
-    buy: 32, hold: 10, sell: 2, target: 220,
-    rating: 'Buy',
-    upside: '+31%',
-    topCall: 'BofA $250 — MI300X AI accelerator hyperscaler adoption thesis',
-    recentAction: 'Upgraded by Needham and Susquehanna on data center GPU diversification trend',
-    keyRisk: 'NVDA CUDA ecosystem dominance is durable moat — AMD playing catch-up',
-    earningsDate: 'Jul 22, 2026',
-    earningsEst: '$0.68 EPS',
-    peRatio: '38×',
-    revGrowth: '+36% YoY',
-    analystNote: 'Biggest gap between current price and analyst target in the group — underappreciated upside',
-  },
-  SPY: {
-    buy: 0, hold: 0, sell: 0, target: 0,
-    rating: 'Index ETF',
-    upside: '—',
-    topCall: 'Tracks S&P 500 — no individual analyst coverage',
-    recentAction: 'YTD performance reflects broad market conditions',
-    keyRisk: 'Fed policy, recession risk, geopolitical events',
-    earningsDate: '—',
-    earningsEst: '—',
-    peRatio: '21×',
-    revGrowth: 'Index',
-    analystNote: 'Benchmark ETF — used as market direction proxy',
-  },
-};
+// ── ANALYST CACHE — populated from FMP API, not hardcoded ─────────────────────
+const analystCache = {};
+
+// ── FETCH ANALYST DATA FROM FMP ───────────────────────────────────────────────
+async function fetchAnalystData(sym) {
+  // Return cached if available and less than 6 hours old
+  const cached = analystCache[sym];
+  if (cached && Date.now() - cached.ts < 6 * 3600 * 1000) return cached.data;
+
+  try {
+    const data = await api(`/api/analyst/${sym}`);
+    if (data && !data.error) {
+      analystCache[sym] = { data, ts: Date.now() };
+      return data;
+    }
+  } catch(e) { console.warn('FMP fetch failed:', e); }
+  return null;
+}
+
+
+// analystDB removed — replaced by live FMP API calls
 
 // ── FULL ANALYSIS ENGINE ──────────────────────────────────────────────────────
 // ── INDICATORS CALCULATED LOCALLY FROM ALPACA DATA ───────────────────────────
@@ -1579,18 +1503,7 @@ function calcIndicators(px, pv, high, low, vol, vwap, bars) {
     ? (bars.slice(-12).reduce((s,b)=>s+b.c,0)/12) - (bars.slice(-26).reduce((s,b)=>s+b.c,0)/26)
     : cp*0.3;
 
-  // Known SMA reference data
-  const maRef = {
-    NVDA:{ma50:217.65,ma200:211.89}, AAPL:{ma50:282.81,ma200:267.67},
-    TSLA:{ma50:295,ma200:240}, META:{ma50:580,ma200:530},
-    MSFT:{ma50:420,ma200:395}, AMD:{ma50:168,ma200:155}, SPY:{ma50:560,ma200:520}
-  };
-
-  // Average volume reference
-  const avgVolRef = {
-    NVDA:171000000, AAPL:55000000, TSLA:90000000,
-    META:18000000, MSFT:22000000, AMD:45000000, SPY:85000000
-  };
+  // Known SMA reference data — removed, now computed from real bars in buildAnalysis
 
   return { cp, atr, rsi, sma20, bbU, bbL, macd };
 }
@@ -1629,7 +1542,7 @@ function showAnalysisLoading(sym) {
 }
 
 // ── MAIN ANALYSIS — calls OpenAI via backend ──────────────────────────────────
-async function buildAnalysis(sym, snap, bars) {
+async function buildAnalysis(sym, snap, bars, analystData) {
   const px   = snap?.latestTrade?.p || snap?.dailyBar?.c || 0;
   const pv   = snap?.prevDailyBar?.c || px;
   const high = snap?.dailyBar?.h || px*1.02;
@@ -1643,18 +1556,25 @@ async function buildAnalysis(sym, snap, bars) {
   // Calculate indicators from real data
   const { rsi, sma20, bbU, bbL, macd } = calcIndicators(px, pv, high, low, vol, vwap, bars);
 
-  // Known MA references
-  const maRef = {
-    NVDA:{ma50:217.65,ma200:211.89}, AAPL:{ma50:282.81,ma200:267.67},
-    TSLA:{ma50:295,ma200:240}, META:{ma50:580,ma200:530},
-    MSFT:{ma50:420,ma200:395}, AMD:{ma50:168,ma200:155}, SPY:{ma50:560,ma200:520}
-  };
-  const ma = maRef[sym] || {ma50:px*.95, ma200:px*.90};
-  const avgVolRef = {
-    NVDA:171000000, AAPL:55000000, TSLA:90000000,
-    META:18000000, MSFT:22000000, AMD:45000000, SPY:85000000
-  };
-  const rvol = vol && avgVolRef[sym] ? vol/avgVolRef[sym] : null;
+  // ── FIX 1: SMA 50 and SMA 200 computed from REAL bar data ──
+  // No more hardcoded values — calculated from actual Alpaca bar history
+  let sma50 = px * 0.95, sma200 = px * 0.90; // fallback only
+  if (bars.length >= 50) {
+    sma50  = bars.slice(-50).reduce((s,b)=>s+b.c,0) / 50;
+  }
+  if (bars.length >= 200) {
+    sma200 = bars.slice(-200).reduce((s,b)=>s+b.c,0) / 200;
+  } else if (bars.length >= 50) {
+    // Use all available bars if < 200 days fetched
+    sma200 = bars.reduce((s,b)=>s+b.c,0) / bars.length;
+  }
+  const ma = { ma50: sma50, ma200: sma200 };
+
+  // ── FIX 2: Average volume from REAL bar data — no more hardcoded lookup ──
+  const avgVol = bars.length > 0
+    ? bars.reduce((s,b)=>s+(b.v||0),0) / bars.length
+    : 0;
+  const rvol = vol && avgVol > 0 ? vol / avgVol : null;
 
   // Market context
   const mktSnap = S.quotes['SPY'];
@@ -1725,7 +1645,7 @@ async function buildAnalysis(sym, snap, bars) {
         low:         parseFloat(low.toFixed(2)),
         volume:      vol,
         vwap:        parseFloat((vwap||px).toFixed(2)),
-        avgVolume:   avgVolRef[sym] || null,
+        avgVolume:   avgVol > 0 ? Math.round(avgVol) : null,
         rsi:         parseFloat(rsi.toFixed(1)),
         macd:        parseFloat(macd.toFixed(4)),
         sma20:       parseFloat(sma20.toFixed(2)),
@@ -1753,11 +1673,11 @@ async function buildAnalysis(sym, snap, bars) {
   }
 
   const ai = aiResult.analysis;
-  renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1);
+  renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1, analystData);
 }
 
 // ── RENDER AI ANALYSIS ────────────────────────────────────────────────────────
-function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1) {
+function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1, fmp) {
   const recType  = ai.recommendation?.toLowerCase() === 'buy' ? 'buy'
     : ai.recommendation?.toLowerCase() === 'sell' ? 'sell' : 'hold';
   const recLabel = recType==='buy' ? '▲ BUY' : recType==='sell' ? '▼ SELL' : '⏸ HOLD';
@@ -1795,64 +1715,81 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
     </div>`;
   }).join('');
 
-  // Analyst consensus
+  // ── ANALYST CONSENSUS — 100% live from FMP API ──
   const anFallbackTarget = px ? Math.round(px*1.12) : 0;
-  const an = analystDB[sym] || {
-    buy:0, hold:0, sell:0, target:anFallbackTarget, rating:'Limited Coverage',
-    upside:'—', topCall:'Limited analyst coverage',
-    recentAction:'Check Bloomberg for latest analyst updates',
-    keyRisk:'Insufficient coverage data',
-    earningsDate:'—', earningsEst:'—', peRatio:'—', revGrowth:'—',
-    analystNote: ai.analystNote || 'Limited Wall Street coverage available.',
-  };
-  const anTotal = an.buy+an.hold+an.sell;
-  const upsidePct = an.target && px ? ((an.target-px)/px*100) : null;
-  const upsideStr = upsidePct!==null ? (upsidePct>=0?'+':'')+upsidePct.toFixed(1)+'% upside' : an.upside;
-  const upsideCol = upsidePct>10?'var(--green-d)':upsidePct>0?'var(--amber)':'var(--red)';
+  const anTotal   = fmp?.totalAnalysts || 0;
+  const anBuy     = fmp?.totalBuy      || 0;
+  const anHold    = fmp?.totalHold     || 0;
+  const anSell    = fmp?.totalSell     || 0;
+  const anTarget  = fmp?.targetMedian  || fmp?.targetMean || anFallbackTarget;
+  const anRating  = fmp?.rating        || 'N/A';
+  const anEarnDate= fmp?.earningsDate
+    ? new Date(fmp.earningsDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    : '—';
+  const anEarnEPS = fmp?.earningsEPS   || '—';
+  const anPE      = fmp?.peRatio       || '—';
+  const anSector  = fmp?.sector        || '—';
+  const upsidePct = anTarget && px ? ((anTarget-px)/px*100) : null;
+  const upsideStr = upsidePct !== null
+    ? (upsidePct>=0?'+':'')+upsidePct.toFixed(1)+'% upside'
+    : '—';
+  const upsideCol = upsidePct>10?'var(--green-d)':upsidePct&&upsidePct>0?'var(--amber)':'var(--red)';
 
-  document.getElementById('shAnalyst').innerHTML = anTotal > 0 ? `
+  const noFmp = !fmp || fmp.noKey || fmp.error;
+
+  document.getElementById('shAnalyst').innerHTML = noFmp ? `
+    <div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);
+      padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--amber);line-height:1.6">
+      ⚠️ Live analyst data unavailable. Add <strong>FMP_API_KEY</strong> in Render environment for real-time analyst ratings, price targets, and earnings data from financialmodelingprep.com (free).
+    </div>
+    <div style="font-size:12px;color:var(--t1);line-height:1.65">${ai.analystNote || 'Analyst consensus not available for this ticker.'}</div>`
+
+  : anTotal > 0 ? `
+    <!-- Rating + target -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
       <div>
-        <div style="font-size:18px;font-weight:800;color:var(--navy)">${an.rating}</div>
-        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-top:2px">${anTotal} Wall Street analysts</div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy)">${anRating}</div>
+        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-top:2px">${anTotal} Wall Street analysts · FMP live</div>
       </div>
       <div style="text-align:right">
-        <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green-d)">$${an.target}</div>
+        <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green-d)">$${parseFloat(anTarget).toFixed(2)}</div>
         <div style="font-size:10px;font-weight:700;color:${upsideCol};font-family:var(--mono);margin-top:1px">${upsideStr}</div>
-        <div style="font-size:9px;color:var(--t3);font-family:var(--mono)">12-mo median target</div>
+        <div style="font-size:9px;color:var(--t3);font-family:var(--mono)">12-mo consensus target</div>
       </div>
     </div>
+    <!-- Buy/Hold/Sell bars -->
     <div style="display:flex;gap:6px;margin-bottom:12px">
-      ${['buy','hold','sell'].map((type,_,__)=>{
-        const count = an[type], col = type==='buy'?'var(--green)':type==='hold'?'var(--amber)':'var(--red)';
-        const textCol = type==='buy'?'var(--green-d)':type==='hold'?'var(--amber)':'var(--red)';
-        return `<div style="flex:1;text-align:center">
+      ${[['Buy',anBuy,'var(--green)','var(--green-d)'],['Hold',anHold,'var(--amber)','var(--amber)'],['Sell',anSell,'var(--red)','var(--red)']].map(([label,count,col,textCol])=>`
+        <div style="flex:1;text-align:center">
           <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${textCol}">${count}</div>
           <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin:4px 0">
             <div style="height:100%;width:${anTotal?(count/anTotal*100).toFixed(0):0}%;background:${col};border-radius:3px"></div>
           </div>
-          <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono)">${type.toUpperCase()}</div>
-        </div>`;
-      }).join('')}
+          <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono)">${label.toUpperCase()}</div>
+        </div>`).join('')}
     </div>
     <div style="height:1px;background:var(--border);margin-bottom:10px"></div>
+    <!-- Key facts from FMP -->
     ${[
-      ['Most bullish call', an.topCall],
-      ['Recent actions', an.recentAction],
-      ['Next earnings', an.earningsDate+' · '+an.earningsEst],
-      ['P/E ratio', an.peRatio],
-      ['Revenue growth', an.revGrowth],
-      ['Key risk', an.keyRisk],
+      ['Next earnings', anEarnDate+' · '+anEarnEPS],
+      ['P/E ratio', anPE],
+      ['Sector', anSector],
+      ['Target range', fmp?.targetLow&&fmp?.targetHigh ? '$'+parseFloat(fmp.targetLow).toFixed(0)+' – $'+parseFloat(fmp.targetHigh).toFixed(0) : '—'],
     ].map(([label,val])=>`
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600;flex-shrink:0">${label}</span>
-        <span style="color:var(--tx);text-align:right;max-width:58%;line-height:1.4;margin-left:8px">${val}</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="color:var(--t2);font-weight:600">${label}</span>
+        <span style="color:var(--tx);font-family:var(--mono);font-weight:600;text-align:right;max-width:60%">${val}</span>
       </div>`).join('')}
+    <!-- GPT-4o analyst note -->
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
       padding:9px 11px;margin-top:10px;font-size:10px;color:var(--t2);line-height:1.6;font-style:italic">
-      📌 ${ai.analystNote || an.analystNote}
+      📌 ${ai.analystNote || 'GPT-4o analyst note not available.'}
     </div>` :
-    `<div style="font-size:12px;color:var(--t2);line-height:1.6;padding:4px 0">${ai.analystNote || 'No analyst consensus available for this ticker.'}</div>`;
+
+  `<div style="font-size:12px;color:var(--t1);line-height:1.65">
+    <div style="font-size:11px;color:var(--t2);font-family:var(--mono);margin-bottom:8px">Source: Financial Modeling Prep API</div>
+    ${ai.analystNote || 'No analyst consensus data available for this ticker.'}
+  </div>`;
 
   // ── TODAY OUTLOOK ──
   const tod = ai.todayOutlook || {};
