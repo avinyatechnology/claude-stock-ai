@@ -1399,7 +1399,10 @@ async function openSheet(sym) {
   document.getElementById('sheet').classList.add('on');
   document.getElementById('bdrop').classList.add('on');
 
-  // Fetch quote, bars, and asset info (company name) in parallel
+  // Show loading animation immediately
+  showAnalysisLoading(sym);
+
+  // Fetch quote, bars, and asset info in parallel
   const [quoteData, bars, assetData] = await Promise.all([
     S.quotes[sym] ? Promise.resolve(null) : api(`/api/quotes?symbols=${sym}`),
     api(`/api/bars/${sym}?timeframe=1D&limit=30`),
@@ -1546,19 +1549,12 @@ const analystDB = {
 };
 
 // ── FULL ANALYSIS ENGINE ──────────────────────────────────────────────────────
-function buildAnalysis(sym, snap, bars) {
-  const px   = snap?.latestTrade?.p || snap?.dailyBar?.c || 0;
-  const pv   = snap?.prevDailyBar?.c || px;
-  const high = snap?.dailyBar?.h || px*1.02;
-  const low  = snap?.dailyBar?.l  || px*0.98;
-  const vol  = snap?.dailyBar?.v  || 0;
-  const vwap = snap?.dailyBar?.vw || px;
+// ── INDICATORS CALCULATED LOCALLY FROM ALPACA DATA ───────────────────────────
+function calcIndicators(px, pv, high, low, vol, vwap, bars) {
+  const cp  = pv ? (px-pv)/pv*100 : 0;
+  const atr = high - low;
 
-  const cp   = pv ? (px-pv)/pv*100 : 0;
-  const atr  = high - low;
-  const atrPct = px ? atr/px*100 : 2;
-
-  // RSI from bars
+  // RSI from real bar data
   let rsi = Math.max(15, Math.min(85, 50 + cp*2.8));
   if (bars.length >= 14) {
     const cls = bars.slice(-15).map(b=>b.c);
@@ -1569,178 +1565,117 @@ function buildAnalysis(sym, snap, bars) {
     rsi = Math.max(10, Math.min(90, rsi));
   }
 
-  // MA & Bollinger
-  const ma = maData[sym] || { ma50:px*.95, ma200:px*.90 };
-  let sma20 = px, bbU = px*1.05, bbL = px*0.95;
+  // Bollinger Bands + SMA20
+  let sma20=px, bbU=px*1.05, bbL=px*0.95;
   if (bars.length >= 20) {
     const c20 = bars.slice(-20).map(b=>b.c);
     sma20 = c20.reduce((s,v)=>s+v,0)/20;
     const std = Math.sqrt(c20.reduce((s,v)=>s+(v-sma20)**2,0)/20);
-    bbU = sma20 + 2*std;
-    bbL = sma20 - 2*std;
+    bbU = sma20+2*std; bbL = sma20-2*std;
   }
 
-  const a50   = px > ma.ma50;
-  const a200  = px > ma.ma200;
-  const a20   = px > sma20;
-  const vwapA = px > (vwap||px)*1.001;
-
+  // MACD
   const macd = bars.length>=26
     ? (bars.slice(-12).reduce((s,b)=>s+b.c,0)/12) - (bars.slice(-26).reduce((s,b)=>s+b.c,0)/26)
     : cp*0.3;
 
-  // ── SCORE ──
-  let score = 0;
-  if (a50)    score++;
-  if (a200)   score++;
-  if (a20)    score++;
-  if (vwapA)  score++;
-  if (macd>0) score++;
-  if (rsi<65 && rsi>40) score++;
-  if (cp>0)   score++;
-
-  const maxScore = 7;
-  const pct = score/maxScore;
-
-  const recType = pct>=.65 ? 'buy' : pct>=.45 ? 'hold' : 'sell';
-  const recLabel = recType==='buy' ? '▲ BUY' : recType==='sell' ? '▼ SELL' : '⏸ HOLD';
-  const conf = Math.round(50 + pct*50);
-  const confCol = recType==='buy'?'#2DC653':recType==='sell'?'#E53E3E':'#D97706';
-
-  // ── UPDATE HERO ──
-  const recEl = document.getElementById('shRec');
-  recEl.textContent = recLabel;
-  recEl.className   = `sh-rec-big ${recType}`;
-  document.getElementById('shConfBar').style.width      = conf+'%';
-  document.getElementById('shConfBar').style.background = confCol;
-  document.getElementById('shConfPct').textContent      = conf+'% confidence';
-
-  // ── MARKET CONTEXT: what the broader market is doing right now ──
-  const mktSnap  = S.quotes['SPY'];
-  const mktPx    = mktSnap?.latestTrade?.p || mktSnap?.dailyBar?.c;
-  const mktPv    = mktSnap?.prevDailyBar?.c;
-  const mktCp    = mktPx && mktPv ? (mktPx-mktPv)/mktPv*100 : null;
-  const mktDir   = mktCp===null?'flat': mktCp>0.3?'rising': mktCp<-0.3?'falling':'flat';
-  const sectorUp = ['NVDA','AMD','AAPL','MSFT','META'].filter(s => {
-    const q = S.quotes[s]; const p = q?.latestTrade?.p||q?.dailyBar?.c; const pv2 = q?.prevDailyBar?.c;
-    return p && pv2 && (p-pv2)/pv2*100 > 0;
-  }).length;
-
-  // ── VOLUME STORY: is this institutional or retail? ──
-  const avgVol = { NVDA:171000000, AAPL:55000000, TSLA:90000000, META:18000000, MSFT:22000000, AMD:45000000, SPY:85000000 };
-  const rvol = vol && avgVol[sym] ? vol/avgVol[sym] : null;
-  const rvolStory = rvol===null ? '' :
-    rvol > 1.8 ? `Volume is running at ${(rvol).toFixed(1)}× the average — this is institutional-level activity, not retail. Large funds are either building or unwinding positions.` :
-    rvol > 1.2 ? `Volume is ${(rvol).toFixed(1)}× above average — above-normal participation suggests conviction behind today's move.` :
-    rvol < 0.5 ? `Volume is only ${(rvol).toFixed(1)}× of average — very thin participation. Today's move may lack conviction and could reverse easily.` :
-    `Volume is near average (${(rvol).toFixed(1)}×) — a normal trading session with no unusual institutional footprint detected.`;
-
-  // ── SELLOFF / RALLY EXPLANATION ──
-  const moveStory = (() => {
-    if (Math.abs(cp) < 0.5) return '';
-    const symStories = {
-      NVDA: {
-        dn: `NVDA is pulling back after hitting all-time highs. Post-earnings sell-offs are common in high-momentum stocks — this is the 4th consecutive quarter where NVDA beat estimates but sold off. Investors are locking in profits after a massive run. Export restriction concerns on AI chips to China and the Middle East are adding fundamental pressure.`,
-        up: `NVDA is advancing on continued AI infrastructure demand. Hyperscaler (Microsoft, Google, Amazon) data center spending is accelerating, and Blackwell GPU demand remains constrained — meaning NVIDIA has pricing power. Institutional buyers are accumulating on any weakness.`
-      },
-      AAPL: {
-        dn: `AAPL is under pressure as investors weigh the competitive gap in AI features versus Google and Microsoft. The Supreme Court App Store ruling adds regulatory overhang. With earnings not until July 30, there is no near-term catalyst to reverse the slide.`,
-        up: `AAPL is rallying as its AI strategy overhaul gains credibility with institutional investors. Wedbush's $400 price target is the highest on the Street. Mac mini demand from AI developers is opening a new revenue vector. The stock is reclaiming key technical levels.`
-      },
-      TSLA: {
-        dn: `TSLA is selling off as investors reassess the timeline for Full Self-Driving and robotaxi revenue. Increased competition from BYD in China, the largest EV market, is compressing margins. CEO attention risk (Elon Musk's involvement in multiple ventures) remains a persistent concern.`,
-        up: `TSLA is advancing on optimism around the robotaxi timeline and FSD V13 progress. The Energy Storage business is accelerating faster than the auto segment. Institutional investors are reaccumulating after a period of significant underperformance.`
-      },
-      META: {
-        dn: `META is declining as investors take profits after a strong run. AI advertising monetization expectations were very high and any guidance miss or macro softness in ad spend gets punished. Regulatory scrutiny in Europe on data privacy continues.`,
-        up: `META is advancing as AI-powered advertising is delivering measurable revenue lift. Ad revenue per user is up significantly year over year. LLaMA 4 is driving engagement across platforms. Analysts are raising estimates for Q2 2026.`
-      },
-      MSFT: {
-        dn: `MSFT is pulling back as the market digests the recent run to all-time highs. Azure growth is strong but already priced in. Some investors are rotating from high-multiple tech into more defensive names. Short-term profit-taking in mega-cap tech is normal.`,
-        up: `MSFT is advancing on enterprise AI adoption data. Azure AI revenue is growing 35% year over year and the Copilot attach rate is accelerating. Microsoft is capturing the largest share of enterprise AI spending, which gives it durable pricing power.`
-      },
-      AMD: {
-        dn: `AMD is underperforming relative to NVDA in the AI chip race. While MI300X is competitive, NVIDIA's CUDA ecosystem lock-in is a durable moat. Export restrictions also impact AMD's addressable market. Some investors are rotating from AMD into NVDA on relative strength.`,
-        up: `AMD is rallying as its MI300X AI accelerator gains enterprise traction. Hyperscalers are diversifying chip suppliers away from NVDA dependence — AMD is the primary beneficiary. Data center GPU revenue is growing rapidly from a low base.`
-      },
-    };
-    const s = symStories[sym];
-    if (s) return cp < 0 ? s.dn : s.up;
-    return cp < 0
-      ? `${sym} is declining. The move appears driven by ${rvol>1.3?'above-average institutional selling volume':'normal profit-taking in the current market environment'}. Watch for stabilization at key support levels.`
-      : `${sym} is advancing. ${rvol>1.3?'Above-average volume confirms institutional participation behind this move.':'The move is supported by positive momentum across the broader market.'}`;
-  })();
-
-  // ── INSTITUTIONAL FLOW READING ──
-  const instStory = (() => {
-    const vwapBias = vwapA ? 'buying' : 'selling';
-    const volBias  = rvol > 1.3 ? 'above-average volume' : rvol < 0.6 ? 'below-average volume' : 'normal volume';
-    if (vwapA && rvol > 1.3) return `Institutional flow is net <strong>bullish</strong>. Price is holding above VWAP with above-average volume — this is the signature of institutional accumulation. Smart money is buying, not selling.`;
-    if (!vwapA && rvol > 1.3) return `Institutional flow is net <strong>bearish</strong>. Price is below VWAP with heavy volume — institutions are distributing shares. This is not retail selling; large funds are exiting positions.`;
-    if (vwapA && rvol < 0.7) return `Modest <strong>bullish bias</strong> — price above VWAP but on light volume. Institutions are not aggressively buying. The move lacks conviction. A volume expansion above average would be needed to confirm a real move.`;
-    if (!vwapA && rvol < 0.7) return `Mild <strong>bearish pressure</strong> on light volume — not a conviction sell-off. Institutions are not aggressively distributing. This may be normal drift rather than a directional shift.`;
-    return `Institutional flow is <strong>neutral</strong>. Price is near VWAP on ${volBias}, suggesting no strong directional bias from large participants. The next session will be important to watch for a clearer signal.`;
-  })();
-
-  // ── BROADER MARKET CONTEXT ──
-  const mktContext = mktCp !== null
-    ? `The broader S&P 500 is ${mktDir} ${mktCp!==null?Math.abs(mktCp).toFixed(2)+'% today':''}, with ${sectorUp} of 5 tracked tech stocks advancing. ${sym === 'SPY' ? '' : mktDir==='rising' && cp<0 ? `${sym} is underperforming the market — this relative weakness is a warning sign worth monitoring.` : mktDir==='falling' && cp>0 ? `${sym} is showing relative strength against a declining market — a bullish signal that institutional buyers are stepping in specifically for this name.` : `${sym} is moving broadly in line with the market.`}`
-    : '';
-
-  // ── VERDICT ──
-  const verdictCore = {
-    buy:  `<strong>${sym} — Recommended: BUY.</strong> The technical structure is constructive${a50&&a200?' with price above both the 50-day and 200-day moving averages':a200?' with the long-term trend intact':''}, momentum is ${macd>0?'positive':'building'}, and VWAP is ${vwapA?'supporting the bullish bias':'near a reclaim level'}. ${moveStory ? '<br><br>'+moveStory : ''}`,
-    hold: `<strong>${sym} — Recommended: HOLD / WAIT.</strong> The stock is in a mixed technical state${!a50?' — below the 50-day SMA which acts as resistance':' — holding near-term support but lacking strong upside confirmation'}. Neither bulls nor bears have a clear edge right now. ${moveStory ? '<br><br>'+moveStory : ''}`,
-    sell: `<strong>${sym} — Recommended: SELL / AVOID.</strong> Technical structure is weak${!a200?' — price below the 200-day moving average signals the long-term trend is broken':' — momentum indicators are deteriorating'}. Risk management favors caution. ${moveStory ? '<br><br>'+moveStory : ''}`,
+  // Known SMA reference data
+  const maRef = {
+    NVDA:{ma50:217.65,ma200:211.89}, AAPL:{ma50:282.81,ma200:267.67},
+    TSLA:{ma50:295,ma200:240}, META:{ma50:580,ma200:530},
+    MSFT:{ma50:420,ma200:395}, AMD:{ma50:168,ma200:155}, SPY:{ma50:560,ma200:520}
   };
 
-  document.getElementById('shVerdict').innerHTML = verdictCore[recType];
+  // Average volume reference
+  const avgVolRef = {
+    NVDA:171000000, AAPL:55000000, TSLA:90000000,
+    META:18000000, MSFT:22000000, AMD:45000000, SPY:85000000
+  };
 
-  // ── INSIGHT CARDS (replaces flat reason list) ──
-  const insightCards = [
-    {
-      icon: rvol>1.3 ? '🏦' : '📊',
-      title: 'Institutional Flow',
-      body: instStory,
-      color: vwapA && rvol>1.2 ? 'var(--green-d)' : !vwapA && rvol>1.2 ? 'var(--red)' : 'var(--amber)',
-    },
-    {
-      icon: '🌐',
-      title: 'Market Context',
-      body: mktContext || `Broad market data loading. ${sym} is currently showing ${cp>=0?'positive':'negative'} price action.`,
-      color: mktDir==='rising'?'var(--green-d)':mktDir==='falling'?'var(--red)':'var(--amber)',
-    },
-    {
-      icon: a50&&a200?'📈':'⚠️',
-      title: 'Trend Health',
-      body: a50&&a200
-        ? `${sym} is in a confirmed uptrend. Price is above both the 50-day ($${ma.ma50.toFixed(0)}) and 200-day ($${ma.ma200.toFixed(0)}) moving averages — the two most widely-watched institutional trend signals. This structure typically attracts institutional buying on dips.`
-        : !a50&&!a200
-        ? `${sym} is in a downtrend. Price has broken below both key moving averages. Institutions following systematic trend rules will be reducing exposure. A recovery above $${ma.ma50.toFixed(0)} (50-day) is needed to shift the outlook.`
-        : `${sym} is in a transitional phase between the 50-day SMA ($${ma.ma50.toFixed(0)}) and 200-day SMA ($${ma.ma200.toFixed(0)}). This zone is contested territory — a break in either direction will signal the next trend.`,
-      color: a50&&a200?'var(--green-d)':!a50&&!a200?'var(--red)':'var(--amber)',
-    },
-    {
-      icon: rvolStory.includes('institutional') ? '🔍' : '📉',
-      title: 'Volume Story',
-      body: rvolStory || `Volume data is loading. Check back after market open for updated institutional participation data.`,
-      color: rvol>1.3?'var(--navy)':'var(--t2)',
-    },
-  ];
+  return { cp, atr, rsi, sma20, bbU, bbL, macd };
+}
 
-  document.getElementById('shReasons').innerHTML = insightCards.map(c => `
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
-      padding:11px 13px;margin-bottom:8px;border-left:3px solid ${c.color}">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-        <span style="font-size:14px">${c.icon}</span>
-        <span style="font-size:11px;font-weight:700;color:var(--tx)">${c.title}</span>
+// ── SHOW LOADING STATE ────────────────────────────────────────────────────────
+function showAnalysisLoading(sym) {
+  const loadHtml = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:32px 20px;gap:14px">
+      <div style="position:relative;width:52px;height:52px">
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid var(--border)"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid transparent;
+          border-top-color:var(--navy);animation:sp .8s linear infinite"></div>
       </div>
-      <div style="font-size:11px;color:var(--t1);line-height:1.65">${c.body}</div>
-    </div>`).join('');
+      <div style="text-align:center">
+        <div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px">
+          GPT-4o is analyzing ${sym}
+        </div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.6">
+          Reading live market data · Calculating indicators<br>
+          Generating AI insights · This takes 5–10 seconds
+        </div>
+      </div>
+    </div>`;
 
-  // stats grid stays the same
+  document.getElementById('shVerdict').innerHTML = 'Analyzing...';
+  document.getElementById('shReasons').innerHTML = loadHtml;
+  document.getElementById('shStats').innerHTML   = '';
+  document.getElementById('shAnalyst').innerHTML = loadHtml;
+  document.getElementById('shTodayCard').innerHTML = loadHtml;
+  document.getElementById('shWeekCard').innerHTML  = loadHtml;
+  document.getElementById('shTargets').innerHTML   = '';
+  document.getElementById('shBull').innerHTML = '<div class="cat-card-hd bull">📈 What\'s driving it higher</div>';
+  document.getElementById('shBear').innerHTML = '<div class="cat-card-hd bear">⚠️ Key risks to watch</div>';
+  document.getElementById('shInds').innerHTML = loadHtml;
+}
+
+// ── MAIN ANALYSIS — calls OpenAI via backend ──────────────────────────────────
+async function buildAnalysis(sym, snap, bars) {
+  const px   = snap?.latestTrade?.p || snap?.dailyBar?.c || 0;
+  const pv   = snap?.prevDailyBar?.c || px;
+  const high = snap?.dailyBar?.h || px*1.02;
+  const low  = snap?.dailyBar?.l  || px*0.98;
+  const vol  = snap?.dailyBar?.v  || 0;
+  const vwap = snap?.dailyBar?.vw || px;
+
+  const cp  = pv ? (px-pv)/pv*100 : 0;
+  const atr = high - low;
+
+  // Calculate indicators from real data
+  const { rsi, sma20, bbU, bbL, macd } = calcIndicators(px, pv, high, low, vol, vwap, bars);
+
+  // Known MA references
+  const maRef = {
+    NVDA:{ma50:217.65,ma200:211.89}, AAPL:{ma50:282.81,ma200:267.67},
+    TSLA:{ma50:295,ma200:240}, META:{ma50:580,ma200:530},
+    MSFT:{ma50:420,ma200:395}, AMD:{ma50:168,ma200:155}, SPY:{ma50:560,ma200:520}
+  };
+  const ma = maRef[sym] || {ma50:px*.95, ma200:px*.90};
+  const avgVolRef = {
+    NVDA:171000000, AAPL:55000000, TSLA:90000000,
+    META:18000000, MSFT:22000000, AMD:45000000, SPY:85000000
+  };
+  const rvol = vol && avgVolRef[sym] ? vol/avgVolRef[sym] : null;
+
+  // Market context
+  const mktSnap = S.quotes['SPY'];
+  const mktPx   = mktSnap?.latestTrade?.p || mktSnap?.dailyBar?.c;
+  const mktPv   = mktSnap?.prevDailyBar?.c;
+  const marketChangePct = mktPx && mktPv ? (mktPx-mktPv)/mktPv*100 : 0;
+
+  // Recent news headlines for context
+  const newsData = await api('/api/news?symbols='+sym+'&limit=5').catch(()=>null);
+  const recentNews = newsData?.news?.slice(0,5).map(n=>({headline:n.headline,source:n.source})) || [];
+
+  // Company name
+  const companyName = document.getElementById('shNm').textContent || sym;
+
+  // Show stats immediately while AI loads
+  const a50  = px > ma.ma50;
+  const a200 = px > ma.ma200;
+  const vwapA = px > (vwap||px)*1.001;
   const s1 = Math.max(ma.ma200, px*.955);
   const r1 = a50 ? px*1.05 : ma.ma50;
+
   document.getElementById('shStats').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">Momentum</div>
@@ -1769,35 +1704,113 @@ function buildAnalysis(sym, snap, bars) {
     </div>
     <div class="stat-card">
       <div class="stat-label">Activity</div>
-      <div class="stat-val ${rvol>1.3?'g':rvol<0.6?'r':'a'}">${rvol?rvol.toFixed(1)+'×':'—'}</div>
+      <div class="stat-val ${rvol>1.3?'g':rvol&&rvol<0.6?'r':'a'}">${rvol?rvol.toFixed(1)+'×':'—'}</div>
       <div class="stat-sub">Rel. volume</div>
     </div>`;
 
-  // ── ANALYST CONSENSUS — rich per-stock data ──
+  // Call OpenAI via backend
+  let aiResult = null;
+  try {
+    const response = await fetch(API + '/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbol: sym,
+        companyName,
+        price:       parseFloat(px.toFixed(2)),
+        prevClose:   parseFloat(pv.toFixed(2)),
+        change:      parseFloat((px-pv).toFixed(2)),
+        changePct:   parseFloat(cp.toFixed(2)),
+        high:        parseFloat(high.toFixed(2)),
+        low:         parseFloat(low.toFixed(2)),
+        volume:      vol,
+        vwap:        parseFloat((vwap||px).toFixed(2)),
+        avgVolume:   avgVolRef[sym] || null,
+        rsi:         parseFloat(rsi.toFixed(1)),
+        macd:        parseFloat(macd.toFixed(4)),
+        sma20:       parseFloat(sma20.toFixed(2)),
+        sma50:       parseFloat(ma.ma50.toFixed(2)),
+        sma200:      parseFloat(ma.ma200.toFixed(2)),
+        bbUpper:     parseFloat(bbU.toFixed(2)),
+        bbLower:     parseFloat(bbL.toFixed(2)),
+        atr:         parseFloat(atr.toFixed(2)),
+        rvol:        rvol ? parseFloat(rvol.toFixed(2)) : null,
+        marketOpen:  S.clock?.is_open || false,
+        recentBars:  bars.slice(-5).map(b=>({c:parseFloat(b.c.toFixed(2)),v:b.v})),
+        marketChangePct: parseFloat(marketChangePct.toFixed(2)),
+        recentNews,
+      }),
+    });
+    aiResult = await response.json();
+  } catch(e) {
+    console.error('AI analysis failed:', e);
+  }
+
+  if (!aiResult?.analysis) {
+    // Fallback if OpenAI fails
+    renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol, s1, r1, bbU, bbL, bars);
+    return;
+  }
+
+  const ai = aiResult.analysis;
+  renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1);
+}
+
+// ── RENDER AI ANALYSIS ────────────────────────────────────────────────────────
+function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1) {
+  const recType  = ai.recommendation?.toLowerCase() === 'buy' ? 'buy'
+    : ai.recommendation?.toLowerCase() === 'sell' ? 'sell' : 'hold';
+  const recLabel = recType==='buy' ? '▲ BUY' : recType==='sell' ? '▼ SELL' : '⏸ HOLD';
+  const conf     = Math.min(99, Math.max(1, ai.confidence || 50));
+  const confCol  = recType==='buy'?'#2DC653':recType==='sell'?'#E53E3E':'#D97706';
+
+  // Hero
+  const recEl = document.getElementById('shRec');
+  recEl.textContent = recLabel;
+  recEl.className   = `sh-rec-big ${recType}`;
+  document.getElementById('shConfBar').style.width      = conf+'%';
+  document.getElementById('shConfBar').style.background = confCol;
+  document.getElementById('shConfPct').textContent      = conf+'% confidence · GPT-4o';
+
+  // Verdict
+  document.getElementById('shVerdict').innerHTML =
+    `<strong>${ai.verdictHeadline}</strong><br><br>${ai.verdictBody}`;
+
+  // Insight cards
+  const insights = ai.insights || [];
+  document.getElementById('shReasons').innerHTML = insights.map(c => {
+    const borderCol = c.title?.toLowerCase().includes('bull') || c.title?.toLowerCase().includes('buy')
+      ? 'var(--green-d)'
+      : c.title?.toLowerCase().includes('risk') || c.title?.toLowerCase().includes('bear')
+      ? 'var(--red)' : 'var(--navy)';
+    return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
+      padding:11px 13px;margin-bottom:8px;border-left:3px solid ${borderCol}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+        <span style="font-size:14px">${c.icon||'📊'}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--tx)">${c.title}</span>
+        <span style="margin-left:auto;font-size:9px;color:var(--t3);font-family:var(--mono);
+          background:var(--blue-bg,rgba(27,45,91,.06));padding:1px 6px;border-radius:8px">GPT-4o</span>
+      </div>
+      <div style="font-size:11px;color:var(--t1);line-height:1.65">${c.body}</div>
+    </div>`;
+  }).join('');
+
+  // Analyst consensus
   const anFallbackTarget = px ? Math.round(px*1.12) : 0;
   const an = analystDB[sym] || {
-    buy: 0, hold: 0, sell: 0,
-    target: anFallbackTarget,
-    rating: 'Limited Coverage',
-    upside: '—',
-    topCall: 'Limited analyst coverage for this ticker',
-    recentAction: 'Check Bloomberg or Yahoo Finance for latest analyst updates',
-    keyRisk: 'Insufficient coverage data — conduct your own research',
-    earningsDate: '—', earningsEst: '—',
-    peRatio: '—', revGrowth: '—',
-    analystNote: 'This ticker has limited Wall Street coverage in our database.',
+    buy:0, hold:0, sell:0, target:anFallbackTarget, rating:'Limited Coverage',
+    upside:'—', topCall:'Limited analyst coverage',
+    recentAction:'Check Bloomberg for latest analyst updates',
+    keyRisk:'Insufficient coverage data',
+    earningsDate:'—', earningsEst:'—', peRatio:'—', revGrowth:'—',
+    analystNote: ai.analystNote || 'Limited Wall Street coverage available.',
   };
-  const anTotal = an.buy + an.hold + an.sell;
-
-  // Calculate upside from current price
+  const anTotal = an.buy+an.hold+an.sell;
   const upsidePct = an.target && px ? ((an.target-px)/px*100) : null;
-  const upsideStr = upsidePct !== null
-    ? (upsidePct >= 0 ? '+' : '') + upsidePct.toFixed(1) + '% upside'
-    : an.upside;
-  const upsideCol = upsidePct > 10 ? 'var(--green-d)' : upsidePct > 0 ? 'var(--amber)' : 'var(--red)';
+  const upsideStr = upsidePct!==null ? (upsidePct>=0?'+':'')+upsidePct.toFixed(1)+'% upside' : an.upside;
+  const upsideCol = upsidePct>10?'var(--green-d)':upsidePct>0?'var(--amber)':'var(--red)';
 
   document.getElementById('shAnalyst').innerHTML = anTotal > 0 ? `
-    <!-- Rating + target header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
       <div>
         <div style="font-size:18px;font-weight:800;color:var(--navy)">${an.rating}</div>
@@ -1809,453 +1822,236 @@ function buildAnalysis(sym, snap, bars) {
         <div style="font-size:9px;color:var(--t3);font-family:var(--mono)">12-mo median target</div>
       </div>
     </div>
-
-    <!-- Buy/Hold/Sell bars -->
     <div style="display:flex;gap:6px;margin-bottom:12px">
-      <div style="flex:1;text-align:center">
-        <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green-d)">${an.buy}</div>
-        <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin:4px 0">
-          <div style="height:100%;width:${anTotal?(an.buy/anTotal*100).toFixed(0):0}%;background:var(--green);border-radius:3px"></div>
-        </div>
-        <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono)">BUY</div>
-      </div>
-      <div style="flex:1;text-align:center">
-        <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--amber)">${an.hold}</div>
-        <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin:4px 0">
-          <div style="height:100%;width:${anTotal?(an.hold/anTotal*100).toFixed(0):0}%;background:var(--amber);border-radius:3px"></div>
-        </div>
-        <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono)">HOLD</div>
-      </div>
-      <div style="flex:1;text-align:center">
-        <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--red)">${an.sell}</div>
-        <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin:4px 0">
-          <div style="height:100%;width:${anTotal?(an.sell/anTotal*100).toFixed(0):0}%;background:var(--red);border-radius:3px"></div>
-        </div>
-        <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono)">SELL</div>
-      </div>
+      ${['buy','hold','sell'].map((type,_,__)=>{
+        const count = an[type], col = type==='buy'?'var(--green)':type==='hold'?'var(--amber)':'var(--red)';
+        const textCol = type==='buy'?'var(--green-d)':type==='hold'?'var(--amber)':'var(--red)';
+        return `<div style="flex:1;text-align:center">
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${textCol}">${count}</div>
+          <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin:4px 0">
+            <div style="height:100%;width:${anTotal?(count/anTotal*100).toFixed(0):0}%;background:${col};border-radius:3px"></div>
+          </div>
+          <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono)">${type.toUpperCase()}</div>
+        </div>`;
+      }).join('')}
     </div>
-
-    <!-- Divider -->
     <div style="height:1px;background:var(--border);margin-bottom:10px"></div>
-
-    <!-- Key analyst facts -->
-    <div style="display:flex;flex-direction:column;gap:0">
+    ${[
+      ['Most bullish call', an.topCall],
+      ['Recent actions', an.recentAction],
+      ['Next earnings', an.earningsDate+' · '+an.earningsEst],
+      ['P/E ratio', an.peRatio],
+      ['Revenue growth', an.revGrowth],
+      ['Key risk', an.keyRisk],
+    ].map(([label,val])=>`
       <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600">Most bullish call</span>
-        <span style="color:var(--tx);text-align:right;max-width:55%;line-height:1.4">${an.topCall}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600">Recent actions</span>
-        <span style="color:var(--tx);text-align:right;max-width:55%;line-height:1.4">${an.recentAction}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600">Next earnings</span>
-        <span style="color:var(--tx);font-family:var(--mono);font-weight:600">${an.earningsDate} · ${an.earningsEst}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600">P/E ratio</span>
-        <span style="color:var(--tx);font-family:var(--mono);font-weight:600">${an.peRatio}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600">Revenue growth</span>
-        <span style="color:var(--green-d);font-family:var(--mono);font-weight:600">${an.revGrowth}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;font-size:11px">
-        <span style="color:var(--t2);font-weight:600">Key risk</span>
-        <span style="color:var(--red);text-align:right;max-width:55%;line-height:1.4">${an.keyRisk}</span>
-      </div>
-    </div>
-
-    <!-- Analyst note -->
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;margin-top:10px;font-size:10px;color:var(--t2);line-height:1.6;font-style:italic">
-      📌 ${an.analystNote}
+        <span style="color:var(--t2);font-weight:600;flex-shrink:0">${label}</span>
+        <span style="color:var(--tx);text-align:right;max-width:58%;line-height:1.4;margin-left:8px">${val}</span>
+      </div>`).join('')}
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
+      padding:9px 11px;margin-top:10px;font-size:10px;color:var(--t2);line-height:1.6;font-style:italic">
+      📌 ${ai.analystNote || an.analystNote}
     </div>` :
+    `<div style="font-size:12px;color:var(--t2);line-height:1.6;padding:4px 0">${ai.analystNote || 'No analyst consensus available for this ticker.'}</div>`;
 
-    `<!-- Index ETF -->
-    <div style="text-align:center;padding:14px 0">
-      <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px">S&P 500 Index ETF</div>
-      <div style="font-size:11px;color:var(--t2);line-height:1.6">SPY tracks all 500 S&P 500 companies. No individual analyst coverage applies. Use SPY as your broad market health gauge — when SPY is bullish, risk appetite is positive across the market.</div>
-      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px">
-        <div style="text-align:center"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--navy)">${an.peRatio}</div><div style="font-size:9px;color:var(--t3)">P/E ratio</div></div>
-        <div style="text-align:center"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green-d)">500</div><div style="font-size:9px;color:var(--t3)">Companies</div></div>
-        <div style="text-align:center"><div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--amber)">Benchmark</div><div style="font-size:9px;color:var(--t3)">US market</div></div>
-      </div>
-    </div>`;
-
-  // ── OUTLOOK PANE ──
-  const now = new Date();
-  const mktOpen = S.clock?.is_open;
-  buildTodayOutlook(sym, px, pv, rsi, vwapA, a50, a200, mktOpen, atr, cp, macd, ma, s1, r1, bbU, bbL, rvol);
-  buildWeekOutlook(sym, px, rsi, a50, a200, vwapA, macd, cp, ma, s1, r1, atr, rvol);
-
-  const bullPx = (px*1.13).toFixed(2);
-  const basePx = (px*1.05).toFixed(2);
-  const bearPx = (px*0.90).toFixed(2);
-  document.getElementById('shTargets').innerHTML = `
-    <div class="target bull"><div class="target-label">Bull Case</div><div class="target-px">$${bullPx}</div><div class="target-pct">+13%</div></div>
-    <div class="target base"><div class="target-label">Base Case</div><div class="target-px">$${basePx}</div><div class="target-pct">+5%</div></div>
-    <div class="target bear"><div class="target-label">Bear Case</div><div class="target-px">$${bearPx}</div><div class="target-pct">-10%</div></div>`;
-
-  const cats = getCatalysts(sym, px, cp, a50, a200, rsi, vwapA);
-  document.getElementById('shBull').innerHTML =
-    `<div class="cat-card-hd bull">📈 What's driving it higher</div>` +
-    cats.bull.map((c,i)=>`<div class="cat-item"><div class="cat-num">${i+1}</div><div>${c}</div></div>`).join('');
-  document.getElementById('shBear').innerHTML =
-    `<div class="cat-card-hd bear">⚠️ Key risks to watch</div>` +
-    cats.bear.map((c,i)=>`<div class="cat-item"><div class="cat-num">${i+1}</div><div>${c}</div></div>`).join('');
-
-  // ── INDICATORS PANE — professional insights, not raw numbers ──
-  const bbPct = bbU!==bbL ? Math.round((px-bbL)/(bbU-bbL)*100) : 50;
-  const rvolLabel = rvol ? (rvol>1.8?'Very High':rvol>1.3?'Above Average':rvol<0.5?'Very Low':rvol<0.8?'Below Average':'Normal') : 'Loading';
-  const rvolCol   = rvol ? (rvol>1.3?'var(--green-d)':rvol<0.6?'var(--red)':'var(--amber)') : 'var(--t3)';
-
-  document.getElementById('shInds').innerHTML = `
-
-    <!-- PRICE TREND INSIGHT -->
-    <div class="ind-card">
-      <div class="ind-card-hd">📈 Price Trend — What direction is the stock moving?</div>
-      <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">
-          ${a50&&a200
-            ? `<strong style="color:var(--green-d)">Uptrend confirmed.</strong> ${sym} is trading above both its 50-day average price ($${ma.ma50.toFixed(0)}) and 200-day average price ($${ma.ma200.toFixed(0)}). When price is above both these levels, it means the stock has been consistently making higher prices over both the short term and long term. This is the most favorable technical environment — institutional investors who follow systematic trend rules will be holding or adding to positions.`
-            : !a50&&!a200
-            ? `<strong style="color:var(--red)">Downtrend in place.</strong> ${sym} is trading below both its 50-day ($${ma.ma50.toFixed(0)}) and 200-day ($${ma.ma200.toFixed(0)}) average prices. This means recent price action has been consistently lower, and systematic institutional funds that follow trend rules will be reducing exposure. A recovery above $${ma.ma50.toFixed(0)} is the first signal to watch.`
-            : `<strong style="color:var(--amber)">Transition zone.</strong> ${sym} is caught between short-term and long-term trend signals. The 200-day average at $${ma.ma200.toFixed(0)} ${a200?'is holding as support':'has been broken'}, while the 50-day at $${ma.ma50.toFixed(0)} is ${a50?'confirmed':'acting as resistance'}. The stock needs a decisive break in either direction to establish a clear trend.`}
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">SHORT TERM (50-day)</div>
-            <div style="font-size:13px;font-weight:700;color:${a50?'var(--green-d)':'var(--red)'}">${a50?'✓ Bullish':'✗ Bearish'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Avg price $${ma.ma50.toFixed(0)}</div>
-          </div>
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">LONG TERM (200-day)</div>
-            <div style="font-size:13px;font-weight:700;color:${a200?'var(--green-d)':'var(--red)'}">${a200?'✓ Intact':'✗ Broken'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Avg price $${ma.ma200.toFixed(0)}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MOMENTUM INSIGHT -->
-    <div class="ind-card">
-      <div class="ind-card-hd">⚡ Momentum — Is the move accelerating or fading?</div>
-      <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">
-          ${rsi>75
-            ? `<strong style="color:var(--red)">Momentum is overheated.</strong> The stock has risen so fast in recent sessions that buying pressure is becoming exhausted. At current momentum levels, new buyers are taking on elevated risk — the easy money has likely been made. This doesn't mean the stock will fall immediately, but caution is warranted. A pullback or consolidation before the next leg higher would be healthy.`
-            : rsi>55
-            ? `<strong style="color:var(--green-d)">Momentum is healthy and positive.</strong> The stock is trending higher with good buying pressure but hasn't reached extreme levels. This is the sweet spot — enough momentum to attract institutional interest, but not so extended that a sharp reversal is likely. ${macd>0?'The trend indicator (MACD) confirms positive momentum.':'Watch for the trend indicator (MACD) to confirm with a bullish cross.'}`
-            : rsi<30
-            ? `<strong style="color:var(--green-d)">Momentum is deeply oversold.</strong> The stock has fallen so far so fast that selling pressure is becoming exhausted. Historically, stocks at these momentum levels tend to see a bounce or stabilization. This is where contrarian investors look for entry points. However, a stock can stay oversold — wait for signs of stabilization before acting.`
-            : rsi<45
-            ? `<strong style="color:var(--amber)">Momentum is weak and declining.</strong> Buying interest is fading. The stock is drifting lower without a strong catalyst to reverse it. ${macd<0?'The trend indicator (MACD) is confirming the bearish momentum.':'Watch for any sign of improvement in MACD for a potential recovery signal.'}`
-            : `<strong style="color:var(--amber)">Momentum is neutral.</strong> Neither strong buyers nor sellers are in control. The stock is likely in a consolidation phase, building energy for the next directional move. A break above resistance or below support will establish the direction.`}
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <div style="font-size:10px;color:var(--t2);font-family:var(--mono);width:64px">Momentum</div>
-          <div style="flex:1;height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border)">
-            <div style="height:100%;width:${rsi}%;background:${rsi>70?'var(--red)':rsi<35?'var(--green)':'var(--navy)'};border-radius:4px;transition:width .5s"></div>
-          </div>
-          <div style="font-size:10px;font-weight:700;color:${rsi>70?'var(--red)':rsi<35?'var(--green-d)':'var(--navy)'};font-family:var(--mono);width:48px">${rsi>70?'Hot 🔥':rsi<35?'Cold ❄️':'Neutral'}</div>
-        </div>
-        <div style="font-size:10px;color:var(--t2);font-family:var(--mono)">
-          Trend direction (MACD): <strong style="color:${macd>0?'var(--green-d)':'var(--red)'}">${macd>0?'▲ Positive — confirms upward momentum':'▼ Negative — confirms downward pressure'}</strong>
-        </div>
-      </div>
-    </div>
-
-    <!-- VOLUME & INSTITUTIONAL ACTIVITY -->
-    <div class="ind-card">
-      <div class="ind-card-hd">🏦 Volume & Institutional Activity — Who is trading this stock?</div>
-      <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">
-          ${rvolStory || 'Volume data loading...'}
-          ${vwapA
-            ? ` Price is trading <strong>above VWAP (Volume Weighted Average Price at $${(vwap||px).toFixed(2)})</strong> — this means the average buyer today is in profit. Institutions use VWAP as their execution benchmark, so price above VWAP signals their buying activity has been supportive.`
-            : ` Price is trading <strong>below VWAP ($${(vwap||px).toFixed(2)})</strong> — the average buyer today is underwater. This indicates sellers have been in control of the session and institutional flow is net negative today.`}
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">TODAY'S VOLUME</div>
-            <div style="font-size:13px;font-weight:700;color:${rvolCol}">${rvolLabel}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">${fvol(vol)} shares traded</div>
-          </div>
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">VWAP POSITION</div>
-            <div style="font-size:13px;font-weight:700;color:${vwapA?'var(--green-d)':'var(--red)'}">${vwapA?'✓ Above':'✗ Below'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Ref: $${(vwap||px).toFixed(2)}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PRICE RANGE & VOLATILITY -->
-    <div class="ind-card">
-      <div class="ind-card-hd">📐 Price Range & Volatility — How much is the stock moving?</div>
-      <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">
-          ${atrPct > 3.5
-            ? `<strong style="color:var(--red)">High volatility day.</strong> ${sym} is moving $${atr.toFixed(2)} (${atrPct.toFixed(1)}%) from low to high today — well above its normal range. This level of volatility requires wider stop-losses and smaller position sizes to manage risk. Large single-day moves like this are often driven by news events or earnings.`
-            : atrPct < 1
-            ? `<strong style="color:var(--amber)">Very low volatility.</strong> ${sym} is barely moving today ($${atr.toFixed(2)}, ${atrPct.toFixed(1)}% range). This is often a sign of consolidation before a larger move. Markets can stay quiet for extended periods and then break sharply — watch for a volume surge as the signal of the next move.`
-            : `<strong>Normal volatility.</strong> ${sym} is trading in a $${atr.toFixed(2)} range today (${atrPct.toFixed(1)}% of price), which is within normal bounds. This suggests orderly price discovery without panic or euphoria. Price is at ${bbPct}% of its recent trading band — ${bbPct>75?'approaching the upper end, suggesting the move may be getting extended':'toward the lower end, suggesting potential support nearby'}.`}
-        </div>
-        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-bottom:4px">Today's price position within recent range</div>
-        <div style="height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
-          <div style="height:100%;width:${bbPct}%;background:${bbPct>80?'var(--red)':bbPct<20?'var(--green)':'var(--navy)'};border-radius:4px"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);font-family:var(--mono)">
-          <span>Lower end $${bbL.toFixed(0)}</span>
-          <span style="color:var(--navy);font-weight:600">Price at ${bbPct}%</span>
-          <span>Upper end $${bbU.toFixed(0)}</span>
-        </div>
-      </div>
-    </div>`;}
-
-
-// ── TODAY NARRATIVE ───────────────────────────────────────────────────────────
-// ── TODAY OUTLOOK ─────────────────────────────────────────────────────────────
-function buildTodayOutlook(sym, px, pv, rsi, vwapA, a50, a200, mktOpen, atr, cp, macd, ma, s1, r1, bbU, bbL, rvol) {
-  const up   = cp >= 0;
-  const dir  = Math.abs(cp) < 0.4 ? 'neut' : up ? 'up' : 'dn';
-  const dirLabel = dir==='up' ? `↑ Bullish Today` : dir==='dn' ? `↓ Bearish Today` : `→ Neutral Today`;
-  const dirConf  = dir==='up'
-    ? `+${Math.abs(cp).toFixed(2)}% · buyers in control`
-    : dir==='dn'
-    ? `-${Math.abs(cp).toFixed(2)}% · sellers in control`
-    : `${cp.toFixed(2)}% · consolidating`;
-
-  // Expected price range for today (using ATR)
-  const todayHigh  = (px + atr * 0.6).toFixed(2);
-  const todayLow   = (px - atr * 0.6).toFixed(2);
-  const todayBase  = px.toFixed(2);
-
-  // VWAP as intraday pivot
-  const vwapPx = ma ? (px * (vwapA ? 0.99 : 1.01)).toFixed(2) : px.toFixed(2);
-
-  // Narrative sentence
-  const narrative = dir==='up'
-    ? `${sym} is advancing ${cp.toFixed(2)}% today with ${vwapA?'price holding above VWAP — institutional buyers are actively supporting the move':'momentum building toward a VWAP reclaim'}. ${rsi>70?'However RSI is elevated at '+rsi.toFixed(0)+', meaning the pace of the rally may slow intraday.':'RSI at '+rsi.toFixed(0)+' gives the stock room to continue higher without hitting overbought extremes.'} ${macd>0?'MACD is confirming positive momentum.':'Watch for MACD to confirm with a bullish cross.'}`
-    : dir==='dn'
-    ? `${sym} is under pressure, down ${Math.abs(cp).toFixed(2)}% today with ${!vwapA?'price trading below VWAP — sellers have had control of the session':'price briefly above VWAP but struggling to hold the level'}. ${rsi<35?'RSI is now oversold at '+rsi.toFixed(0)+' — this level of selling exhaustion often precedes a short-term bounce.':'RSI at '+rsi.toFixed(0)+' suggests the selling could continue before a meaningful bounce materialises.'} ${macd<0?'MACD is confirming the bearish momentum.':'Keep an eye on MACD for any early sign of a reversal.'}`
-    : `${sym} is flat to slightly ${cp>=0?'positive':'negative'} today (${cp.toFixed(2)}%), moving within a tight range. This kind of low-volatility session often signals that the market is waiting for a catalyst — a news event, volume spike, or broader market move — before committing to a direction.`;
-
-  // Supporting facts
-  const facts = [
-    {
-      ic: vwapA ? '✅' : '⚠️',
-      text: `<strong>VWAP at $${(px*(vwapA?0.99:1.01)).toFixed(2)}:</strong> Price is ${vwapA?'above':'below'} the volume-weighted average price — the key intraday institutional benchmark. ${vwapA?'This means the average buyer today is in profit and institutional flow is net bullish.':'Sellers are dominating and the average buyer today is underwater. A reclaim of VWAP would be the first bullish signal.'}`
-    },
-    {
-      ic: rsi>70?'🔴':rsi<35?'🟢':'🟡',
-      text: `<strong>Momentum (RSI ${rsi.toFixed(0)}):</strong> ${rsi>70?'Overbought — the move is stretched. Profit-taking risk is elevated and new buyers should wait for a pullback before entering.':rsi<35?'Oversold — selling has been excessive. A bounce or stabilization is increasingly likely in the near term.':'Neutral zone — momentum is balanced and the stock has room to move in either direction depending on volume and news flow.'}`
-    },
-    {
-      ic: macd>0?'📈':'📉',
-      text: `<strong>Trend confirmation (MACD):</strong> ${macd>0?'Positive — the medium-term momentum indicator is aligned bullishly, adding confidence to the upside move.':'Negative — medium-term momentum is still bearish. The stock needs a MACD bullish crossover to signal a genuine trend shift.'}`
-    },
-    {
-      ic: '📐',
-      text: `<strong>Today's expected range:</strong> Based on recent volatility (ATR $${atr.toFixed(2)}), the stock is expected to trade between roughly $${todayLow} on the low end and $${todayHigh} on the high end today. ${mktOpen?'Market is currently open.':'Market is currently closed — this range applies to the next session.'}`
-    },
-  ];
-
+  // ── TODAY OUTLOOK ──
+  const tod = ai.todayOutlook || {};
+  const todDir = (tod.direction||'NEUTRAL').toLowerCase().replace('up','up').replace('down','dn');
+  const todDirCss = todDir==='up'?'up':todDir==='down'||todDir==='dn'?'dn':'neut';
+  const todLabel = todDirCss==='up'?'↑ Bullish Today':todDirCss==='dn'?'↓ Bearish Today':'→ Neutral Today';
+  const todH = tod.expectedHigh || (px+atr*0.6);
+  const todL = tod.expectedLow  || (px-atr*0.6);
   document.getElementById('shTodayCard').innerHTML = `
     <div class="ol-card">
       <div class="ol-card-hd">
         <div class="ol-card-hd-icon">📅</div>
         <div>
-          <div class="ol-card-hd-title">Today's Outlook</div>
-          <div class="ol-card-hd-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · ${mktOpen?'Market Open':'Market Closed'}</div>
+          <div class="ol-card-hd-title">Today's Outlook <span style="font-size:9px;color:var(--t3);font-family:var(--mono);font-weight:400;margin-left:6px">GPT-4o</span></div>
+          <div class="ol-card-hd-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · ${S.clock?.is_open?'Market Open':'Market Closed'}</div>
         </div>
       </div>
       <div class="ol-card-body">
-        <div class="ol-direction-banner ${dir}">
+        <div class="ol-direction-banner ${todDirCss}">
           <div>
-            <div class="ol-dir-label">${dirLabel}</div>
-            <div style="font-size:10px;color:var(--t2);margin-top:2px">${dirConf}</div>
+            <div class="ol-dir-label">${todLabel}</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:2px">${cp>=0?'+':''}${cp.toFixed(2)}% · ${vwapA?'above VWAP':'below VWAP'}</div>
           </div>
           <div style="text-align:right">
             <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--t1)">Current</div>
             <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx)">$${px.toFixed(2)}</div>
           </div>
         </div>
-
         <div class="ol-price-zone">
-          <div class="opz high">
-            <div class="opz-label">Today High</div>
-            <div class="opz-price">$${todayHigh}</div>
-            <div class="opz-note">+ATR zone</div>
-          </div>
-          <div class="opz base">
-            <div class="opz-label">Current</div>
-            <div class="opz-price">$${todayBase}</div>
-            <div class="opz-note">Live price</div>
-          </div>
-          <div class="opz low">
-            <div class="opz-label">Today Low</div>
-            <div class="opz-price">$${todayLow}</div>
-            <div class="opz-note">-ATR zone</div>
-          </div>
+          <div class="opz high"><div class="opz-label">Expected High</div><div class="opz-price">$${parseFloat(todH).toFixed(2)}</div><div class="opz-note">AI estimate</div></div>
+          <div class="opz base"><div class="opz-label">Current</div><div class="opz-price">$${px.toFixed(2)}</div><div class="opz-note">Live price</div></div>
+          <div class="opz low"><div class="opz-label">Expected Low</div><div class="opz-price">$${parseFloat(todL).toFixed(2)}</div><div class="opz-note">AI estimate</div></div>
         </div>
-
-        <div class="ol-narrative">${narrative}</div>
-
-        <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
-        <div>
-          ${facts.map(f=>`<div class="fact-row"><div class="fact-ic">${f.ic}</div><div class="fact-text">${f.text}</div></div>`).join('')}
-        </div>
+        <div class="ol-narrative">${tod.narrative || ''}</div>
+        ${(tod.facts||[]).length ? `
+          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
+          <div>${(tod.facts||[]).map(f=>`<div class="fact-row"><div class="fact-ic">${f.icon||'📌'}</div><div class="fact-text"><strong>${f.title}</strong> — ${f.body}</div></div>`).join('')}</div>` : ''}
       </div>
     </div>`;
-}
 
-// ── WEEK OUTLOOK ──────────────────────────────────────────────────────────────
-function buildWeekOutlook(sym, px, rsi, a50, a200, vwapA, macd, cp, ma, s1, r1, atr, rvol) {
-  const weekBias = (a50 && a200 && macd>0) ? 'up' : (!a50 && !a200) ? 'dn' : 'neut';
-  const weekLabel = weekBias==='up' ? '↑ Bullish Bias This Week'
-    : weekBias==='dn' ? '↓ Bearish Bias This Week'
-    : '→ Neutral / Wait-and-See';
-
-  // Weekly expected price ranges
-  const weekHigh = (px + atr * 2.2).toFixed(2);
-  const weekBase = (px * (weekBias==='up' ? 1.025 : weekBias==='dn' ? 0.975 : 1.0)).toFixed(2);
-  const weekLow  = (px - atr * 2.2).toFixed(2);
-
-  // Key levels this week
-  const keySupport    = parseFloat(s1).toFixed(2);
-  const keyResistance = parseFloat(r1).toFixed(2);
-
-  // Weekly narrative
-  const narrative = weekBias==='up'
-    ? `${sym} enters this week with a <strong>bullish technical structure</strong>. Price is above both the 50-day average ($${ma.ma50.toFixed(0)}) and 200-day average ($${ma.ma200.toFixed(0)}), which tells us institutional investors following trend-based rules are likely holding or adding to positions. The path of least resistance is higher. The base case price target for this week is around <strong>$${weekBase}</strong>, with $${weekHigh} achievable if buyers push above resistance. The key condition to watch: support at $${keySupport} must hold — a break below would shift the bias negative.`
-    : weekBias==='dn'
-    ? `${sym} enters this week with a <strong>bearish technical structure</strong>. Price is below both the 50-day ($${ma.ma50.toFixed(0)}) and 200-day ($${ma.ma200.toFixed(0)}) moving averages, meaning systematic institutional funds are likely reducing exposure. The path of least resistance is lower. The base case for this week is around <strong>$${weekBase}</strong>, with $${weekLow} possible if selling continues. A recovery above $${keyResistance} (50-day SMA) would be the first sign of a genuine reversal.`
-    : `${sym} enters this week in a <strong>transitional, wait-and-see zone</strong> — caught between the 50-day and 200-day moving averages. The market has not yet decided direction. The base case this week is roughly <strong>$${weekBase}</strong> with the stock likely to oscillate between $${weekLow} support and $${weekHigh} resistance. A decisive break above $${keyResistance} would shift the bias bullish. A break below $${keySupport} would shift it bearish.`;
-
-  // Weekly supporting facts
-  const weekFacts = [
-    {
-      ic: a50&&a200?'✅':!a50&&!a200?'❌':'⚠️',
-      text: `<strong>Trend alignment:</strong> ${a50&&a200?'Both the 50-day ($'+ma.ma50.toFixed(0)+') and 200-day ($'+ma.ma200.toFixed(0)+') moving averages are below price — a bullish structure that historically attracts institutional accumulation on any weakness.':!a50&&!a200?'Price is below both key moving averages ($'+ma.ma50.toFixed(0)+' and $'+ma.ma200.toFixed(0)+'). Institutional sellers following systematic rules will be reducing positions this week.':'Price is between the 50-day ($'+ma.ma50.toFixed(0)+') and 200-day ($'+ma.ma200.toFixed(0)+') — a contested zone where direction depends on the next catalyst.'}`
-    },
-    {
-      ic: '🎯',
-      text: `<strong>Key levels to watch this week:</strong> Support at <strong>$${keySupport}</strong> — this is where long-term buyers are likely to step in. If this breaks, expect accelerated selling. Resistance at <strong>$${keyResistance}</strong> — a weekly close above this level would confirm the bullish bias and likely attract momentum buyers.`
-    },
-    {
-      ic: rsi>65?'🔴':rsi<40?'🟢':'🟡',
-      text: `<strong>Momentum entering the week (RSI ${rsi.toFixed(0)}):</strong> ${rsi>65?'Elevated — the stock enters the week stretched to the upside. Risk of a mid-week pullback before a continuation. Buyers should wait for dips rather than chasing at current levels.':rsi<40?'Weak — the stock enters the week oversold. A bounce or stabilization is increasingly likely this week. Watch for a volume pickup as confirmation of a bottom.':'Neutral — RSI gives the stock room to move in either direction. The next catalyst or volume event will likely determine the weekly direction.'}`
-    },
-    {
-      ic: rvol && rvol>1.3?'🏦':'📊',
-      text: `<strong>Institutional activity:</strong> ${rvol && rvol>1.3?'Last session saw above-average volume ('+rvol.toFixed(1)+'× normal). Large funds are actively involved — this week\'s price action will likely see continued institutional participation.':rvol && rvol<0.7?'Last session had below-average volume. Institutions were quiet. This week watch for a volume expansion as the signal of the next directional move.':'Normal volume last session. No unusual institutional footprint. The stock is in a natural price discovery phase this week.'}`
-    },
-    {
-      ic: macd>0?'📈':'📉',
-      text: `<strong>Weekly momentum trend (MACD):</strong> ${macd>0?'Positive and above signal line — medium-term momentum is aligned bullishly going into this week. Supports the case for higher prices if no negative catalyst emerges.':'Negative — medium-term momentum is still bearish going into this week. The stock needs a MACD bullish crossover before the weekly bias meaningfully shifts positive.'}`
-    },
-  ];
-
+  // ── WEEK OUTLOOK ──
+  const wk = ai.weekOutlook || {};
+  const wkDir = (wk.direction||'NEUTRAL');
+  const wkDirCss = wkDir==='UP'?'up':wkDir==='DOWN'?'dn':'neut';
+  const wkLabel = wkDirCss==='up'?'↑ Bullish Bias This Week':wkDirCss==='dn'?'↓ Bearish Bias This Week':'→ Neutral / Wait-and-See';
+  const wkH = wk.expectedHigh || (px+atr*2.2);
+  const wkL = wk.expectedLow  || (px-atr*2.2);
+  const wkBase = wk.baseCase  || px;
   document.getElementById('shWeekCard').innerHTML = `
     <div class="ol-card">
       <div class="ol-card-hd">
         <div class="ol-card-hd-icon">📆</div>
         <div>
-          <div class="ol-card-hd-title">This Week's Outlook</div>
+          <div class="ol-card-hd-title">This Week's Outlook <span style="font-size:9px;color:var(--t3);font-family:var(--mono);font-weight:400;margin-left:6px">GPT-4o</span></div>
           <div class="ol-card-hd-sub">Week of ${getMonday()}</div>
         </div>
       </div>
       <div class="ol-card-body">
-        <div class="ol-direction-banner ${weekBias}">
+        <div class="ol-direction-banner ${wkDirCss}">
           <div>
-            <div class="ol-dir-label">${weekLabel}</div>
-            <div style="font-size:10px;color:var(--t2);margin-top:2px">${a50&&a200?'Both MAs below price':'${!a50&&!a200?\'Both MAs above price\':\'Between key MAs\'}'}</div>
+            <div class="ol-dir-label">${wkLabel}</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:2px">${a50&&a200?'Both MAs supporting':!a50&&!a200?'Both MAs as resistance':'Between key MAs'}</div>
           </div>
           <div style="text-align:right">
             <div style="font-family:var(--mono);font-size:9px;color:var(--t3);font-weight:600">BASE CASE</div>
-            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx)">$${weekBase}</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx)">$${parseFloat(wkBase).toFixed(2)}</div>
           </div>
         </div>
-
         <div class="ol-price-zone">
-          <div class="opz high">
-            <div class="opz-label">Week High</div>
-            <div class="opz-price">$${weekHigh}</div>
-            <div class="opz-note">Bull scenario</div>
+          <div class="opz high"><div class="opz-label">Week High</div><div class="opz-price">$${parseFloat(wkH).toFixed(2)}</div><div class="opz-note">Bull scenario</div></div>
+          <div class="opz base"><div class="opz-label">Base Case</div><div class="opz-price">$${parseFloat(wkBase).toFixed(2)}</div><div class="opz-note">Most likely</div></div>
+          <div class="opz low"><div class="opz-label">Week Low</div><div class="opz-price">$${parseFloat(wkL).toFixed(2)}</div><div class="opz-note">Bear scenario</div></div>
+        </div>
+        <div class="ol-narrative">${wk.narrative || ''}</div>
+        ${(wk.facts||[]).length ? `
+          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
+          <div>${(wk.facts||[]).map(f=>`<div class="fact-row"><div class="fact-ic">${f.icon||'📌'}</div><div class="fact-text"><strong>${f.title}</strong> — ${f.body}</div></div>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+
+  // ── 3-MONTH TARGETS ──
+  const t3 = ai.threeMonthTargets || {};
+  const bullPx = t3.bull || (px*1.13);
+  const basePx = t3.base || (px*1.05);
+  const bearPx = t3.bear || (px*0.90);
+  document.getElementById('shTargets').innerHTML = `
+    <div class="target bull"><div class="target-label">Bull Case</div><div class="target-px">$${parseFloat(bullPx).toFixed(2)}</div><div class="target-pct">${((bullPx-px)/px*100).toFixed(0)}%</div></div>
+    <div class="target base"><div class="target-label">Base Case</div><div class="target-px">$${parseFloat(basePx).toFixed(2)}</div><div class="target-pct">${((basePx-px)/px*100).toFixed(0)}%</div></div>
+    <div class="target bear"><div class="target-label">Bear Case</div><div class="target-px">$${parseFloat(bearPx).toFixed(2)}</div><div class="target-pct">${((bearPx-px)/px*100).toFixed(0)}%</div></div>`;
+
+  // ── CATALYSTS ──
+  const cats = ai.catalysts || {bull:[],bear:[]};
+  document.getElementById('shBull').innerHTML =
+    `<div class="cat-card-hd bull">📈 What's driving it higher</div>` +
+    (cats.bull||[]).map((c,i)=>`<div class="cat-item"><div class="cat-num">${i+1}</div><div>${c}</div></div>`).join('');
+  document.getElementById('shBear').innerHTML =
+    `<div class="cat-card-hd bear">⚠️ Key risks to watch</div>` +
+    (cats.bear||[]).map((c,i)=>`<div class="cat-item"><div class="cat-num">${i+1}</div><div>${c}</div></div>`).join('');
+
+  // ── INDICATORS (GPT narrative + calculated values) ──
+  const ind = ai.indicators || {};
+  const bbPct = bbU!==bbL ? Math.round((px-bbL)/(bbU-bbL)*100) : 50;
+  const rvolLabel = rvol?(rvol>1.8?'Very High':rvol>1.3?'Above Avg':rvol<0.5?'Very Low':rvol<0.8?'Below Avg':'Normal'):'Loading';
+  const rvolCol   = rvol?(rvol>1.3?'var(--green-d)':rvol<0.6?'var(--red)':'var(--amber)'):'var(--t3)';
+
+  document.getElementById('shInds').innerHTML = `
+    <div class="ind-card">
+      <div class="ind-card-hd">📈 Price Trend <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live Data</span></div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.trendInsight || 'Trend analysis loading...'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">SHORT TERM (50-day)</div>
+            <div style="font-size:13px;font-weight:700;color:${a50?'var(--green-d)':'var(--red)'}">${a50?'✓ Bullish':'✗ Bearish'}</div>
+            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Avg $${ma.ma50.toFixed(0)}</div>
           </div>
-          <div class="opz base">
-            <div class="opz-label">Base Case</div>
-            <div class="opz-price">$${weekBase}</div>
-            <div class="opz-note">Most likely</div>
-          </div>
-          <div class="opz low">
-            <div class="opz-label">Week Low</div>
-            <div class="opz-price">$${weekLow}</div>
-            <div class="opz-note">Bear scenario</div>
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">LONG TERM (200-day)</div>
+            <div style="font-size:13px;font-weight:700;color:${a200?'var(--green-d)':'var(--red)'}">${a200?'✓ Intact':'✗ Broken'}</div>
+            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Avg $${ma.ma200.toFixed(0)}</div>
           </div>
         </div>
-
-        <div class="ol-narrative">${narrative}</div>
-
-        <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
-        <div>
-          ${weekFacts.map(f=>`<div class="fact-row"><div class="fact-ic">${f.ic}</div><div class="fact-text">${f.text}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="ind-card">
+      <div class="ind-card-hd">⚡ Momentum <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live RSI/MACD</span></div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.momentumInsight || 'Momentum analysis loading...'}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="font-size:10px;color:var(--t2);font-family:var(--mono);width:64px">RSI ${rsi.toFixed(0)}</div>
+          <div style="flex:1;height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border)">
+            <div style="height:100%;width:${rsi}%;background:${rsi>70?'var(--red)':rsi<35?'var(--green)':'var(--navy)'};border-radius:4px"></div>
+          </div>
+          <div style="font-size:10px;font-weight:700;color:${rsi>70?'var(--red)':rsi<35?'var(--green-d)':'var(--navy)'};font-family:var(--mono)">${rsi>70?'Hot🔥':rsi<35?'Cold❄️':'Neutral'}</div>
         </div>
+      </div>
+    </div>
+    <div class="ind-card">
+      <div class="ind-card-hd">🏦 Volume & Institutional Flow <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live Volume</span></div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.volumeInsight || 'Volume analysis loading...'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">TODAY'S VOLUME</div>
+            <div style="font-size:13px;font-weight:700;color:${rvolCol}">${rvolLabel}</div>
+            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">${fvol(document.getElementById('shStats') ? 0 : 0)} RVOL ${rvol?rvol.toFixed(1)+'×':'—'}</div>
+          </div>
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">VWAP POSITION</div>
+            <div style="font-size:13px;font-weight:700;color:${vwapA?'var(--green-d)':'var(--red)'}">${vwapA?'✓ Above':'✗ Below'}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ind-card">
+      <div class="ind-card-hd">📐 Volatility & Range <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live ATR/BB</span></div>
+      <div style="padding:12px 14px">
+        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.volatilityInsight || 'Volatility analysis loading...'}</div>
+        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-bottom:4px">Price position in recent band</div>
+        <div style="height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
+          <div style="height:100%;width:${bbPct}%;background:${bbPct>80?'var(--red)':bbPct<20?'var(--green)':'var(--navy)'};border-radius:4px"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);font-family:var(--mono)">
+          <span>Lower $${bbL.toFixed(0)}</span>
+          <span style="color:var(--navy);font-weight:600">${bbPct}% of band</span>
+          <span>Upper $${bbU.toFixed(0)}</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);margin-bottom:7px">📋 Data Sources</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Live price, volume & VWAP — Alpaca Markets API</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> RSI, MACD, Bollinger Bands — calculated from 30 days of real bar data</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Narrative analysis — GPT-4o reading live numbers in real time</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--amber);font-weight:700">⚠</span> SMA 50/200 are reference values — updated periodically</div>
       </div>
     </div>`;
 }
 
-// ── OLD FUNCTIONS REPLACED ─────────────────────────────────────────────────────
-function buildTodayNarrative() { return ''; }
-function buildWeekNarrative()  { return ''; }
-function getCatalysts(sym, px, cp, a50, a200, rsi, vwapA) {
-  const base = {
-    bull: [
-      `All major moving averages (50d, 200d) ${a50&&a200?'in bullish alignment':'showing recovery potential'} — institutional trend still intact`,
-      `RSI at ${rsi.toFixed(0)} has ${rsi<65?'meaningful room to run before reaching overbought extremes':'momentum behind it despite elevated levels'}`,
-      `AI and technology infrastructure spending cycle accelerating in 2026 — sector tailwind`,
-      `Institutional options flow leaning bullish — calls exceeding puts in recent sessions`,
-    ],
-    bear: [
-      `${!a50?'Trading below 50-day SMA is a short-term headwind that could attract technical sellers':'Elevated RSI increases pullback risk if the broader market corrects'}`,
-      `Macro uncertainty — any Fed policy shift or recession signal could trigger a de-risking event`,
-      `${rsi>65?'Overbought momentum leaves the stock vulnerable to profit-taking at current levels':'Any break below the 200-day SMA would signal a meaningful trend change'}`,
-      `Export restrictions and geopolitical risks remain an ongoing headwind for the technology sector`,
-    ],
-  };
+// ── FALLBACK if OpenAI unavailable ────────────────────────────────────────────
+function renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol, s1, r1, bbU, bbL, bars) {
+  const recType  = (a50&&a200&&macd>0&&cp>0) ? 'buy' : (!a50&&!a200&&macd<0) ? 'sell' : 'hold';
+  const recLabel = recType==='buy'?'▲ BUY':recType==='sell'?'▼ SELL':'⏸ HOLD';
+  const recEl = document.getElementById('shRec');
+  recEl.textContent = recLabel;
+  recEl.className   = `sh-rec-big ${recType}`;
+  document.getElementById('shConfPct').textContent = 'Technical signals only';
 
-  const specific = {
-    NVDA: {
-      bull: ['Q1 FY2027 earnings beat +6.25% — revenue $81.6B up 85% year-over-year','Q2 guidance of $91B exceeded Wall Street estimates of $87.2B','$80B share buyback provides a structural floor — NVIDIA is buying its own stock','Jensen Huang: "Agentic AI demand has gone parabolic" — secular growth narrative intact'],
-      bear: ['4th consecutive post-earnings sell-off — stock has been "priced for perfection" each quarter','No China data center revenue factored into guidance due to export restrictions','Trading at a significant premium to intrinsic fair value per most valuation models','Large customers (hyperscalers) have strategic incentive to reduce NVIDIA chip dependency over time'],
-    },
-    AAPL: {
-      bull: ['AI services revenue strategy emerging as a new long-term growth vector beyond hardware','Wedbush analyst raised price target to $400 — most bullish institutional call on the Street','Mac mini demand surge driven by developer AI use case — new market segment opening','Golden cross signal recently triggered — historically preceded sustained multi-month rallies'],
-      bear: ['Supreme Court App Store ruling creates regulatory uncertainty over a significant revenue stream','AI feature rollout falling behind Google and Microsoft — competitive pressure is mounting','Next earnings not until July 30 — no near-term catalyst to drive a breakout from current levels','Premium valuation relative to earnings growth limits how much institutional buyers will chase the stock'],
-    },
-    TSLA: {
-      bull: ['Energy storage and Megapack business growing faster than the core auto segment','Full Self-Driving V13 rollout could unlock robotaxi revenue — a large addressable market','Elon Musk political leverage may provide favorable regulatory environment for autonomous vehicles','Production costs declining as manufacturing efficiency improves — margin recovery story'],
-      bear: ['Core EV market share under pressure from BYD and Chinese manufacturers in key markets','CEO distraction risk — Elon Musk divides time across multiple companies','Valuation implies extreme growth that requires near-perfect execution across every segment','Consumer brand perception deteriorating in key European markets — impact on sales'],
-    },
-  };
-
-  const s = specific[sym];
-  return s ? { bull: s.bull, bear: s.bear } : base;
-}
-
-// ── TABS ──────────────────────────────────────────────────────────────────────
-function shTab(el, name) {
-  document.querySelectorAll('.sh-tab').forEach(t=>t.classList.remove('on'));
-  document.querySelectorAll('.sh-pane').forEach(p=>p.classList.remove('on'));
-  el.classList.add('on');
-  document.getElementById('sh-'+name).classList.add('on');
-}
-
-function chipTap(el, sym) {
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  openSheet(sym);
+  const errBox = `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);
+    padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--amber);line-height:1.6">
+    ⚠️ GPT-4o analysis unavailable — showing technical signals only.<br>
+    Check that OPENAI_API_KEY is set in Render environment.
+  </div>`;
+  document.getElementById('shVerdict').innerHTML = errBox +
+    `${sym} is showing <strong>${recType === 'buy' ? 'bullish' : recType === 'sell' ? 'bearish' : 'mixed'} technical signals</strong>.
+    Price is ${a50?'above':'below'} the 50-day SMA and ${a200?'above':'below'} the 200-day SMA.
+    RSI at ${rsi.toFixed(0)} is ${rsi>70?'overbought':rsi<35?'oversold':'neutral'}.`;
+  document.getElementById('shReasons').innerHTML = '';
 }
 
 function navTap(el) {
