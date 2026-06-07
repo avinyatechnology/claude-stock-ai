@@ -930,14 +930,13 @@ async function init() {
     else setConn('warn','API keys missing','Render → Environment → Add ALPACA_KEY + ALPACA_SECRET');
   } else {
     setConn('err','Server offline','Deploy backend to Render first');
-    document.getElementById('cards').innerHTML = emptyState('🔌','Server offline','Deploy the backend to Render, then add your Alpaca API keys in Environment settings.');
   }
 }
 
 async function loadAll() {
   await Promise.all([loadQuotes(), loadClock()]);
   renderMarket();
-  renderCards();
+  // Cards only render when user actively searches a ticker — not on load
 }
 
 async function refreshAll() {
