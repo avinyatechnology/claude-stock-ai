@@ -202,6 +202,20 @@ app.get('/api/portfolio/history', async (req, res) => {
   }
 });
 
+// ── ASSET INFO (company name, exchange, status) ───────────────────────────────
+app.get('/api/asset/:symbol', async (req, res) => {
+  try {
+    const r = await fetch(
+      `${TRADING_BASE}/v2/assets/${req.params.symbol.toUpperCase()}`,
+      { headers: alpacaHeaders() }
+    );
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── NEWS (Alpaca News API) ────────────────────────────────────────────────────
 // Alpaca provides real-time financial news with ticker associations
 // Endpoint: GET /v1beta1/news

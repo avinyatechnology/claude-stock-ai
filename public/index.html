@@ -409,6 +409,47 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 .oc-sub { font-size: 11px; color: var(--t2); margin-top: 2px; }
 .oc-body { font-size: 12px; color: var(--t1); line-height: 1.7; }
 
+/* ── RICH OUTLOOK CARDS ── */
+.ol-card { background:var(--card); border-radius:var(--r); border:1px solid var(--border); margin-bottom:10px; overflow:hidden; box-shadow:var(--shadow); }
+.ol-card-hd { display:flex; align-items:center; gap:10px; padding:13px 14px 10px; border-bottom:1px solid var(--border); }
+.ol-card-hd-icon { font-size:18px; flex-shrink:0; }
+.ol-card-hd-title { font-size:13px; font-weight:700; color:var(--tx); }
+.ol-card-hd-sub { font-size:10px; color:var(--t2); margin-top:1px; }
+.ol-card-body { padding:12px 14px; }
+.ol-direction-banner { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:var(--r-sm); margin-bottom:10px; border:1px solid; }
+.ol-direction-banner.up   { background:var(--green-bg); border-color:var(--green-brd); }
+.ol-direction-banner.dn   { background:var(--red-bg);   border-color:var(--red-brd); }
+.ol-direction-banner.neut { background:var(--amber-bg); border-color:var(--amber-brd); }
+.ol-dir-label { font-size:13px; font-weight:700; }
+.ol-direction-banner.up   .ol-dir-label { color:var(--green-d); }
+.ol-direction-banner.dn   .ol-dir-label { color:var(--red); }
+.ol-direction-banner.neut .ol-dir-label { color:var(--amber); }
+.ol-dir-conf { font-family:var(--mono); font-size:11px; font-weight:600; }
+.ol-narrative { font-size:12px; color:var(--t1); line-height:1.7; margin-bottom:10px; }
+
+/* Price zones */
+.ol-price-zone { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px; }
+.opz { padding:9px 10px; border-radius:var(--r-sm); text-align:center; border:1px solid; }
+.opz.high { background:var(--green-bg); border-color:var(--green-brd); }
+.opz.base { background:#EEF2FF; border-color:rgba(27,45,91,.15); }
+.opz.low  { background:var(--red-bg); border-color:var(--red-brd); }
+.opz-label { font-size:8px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-family:var(--mono); margin-bottom:3px; }
+.opz.high .opz-label { color:var(--green-d); }
+.opz.base .opz-label { color:var(--navy); }
+.opz.low  .opz-label { color:var(--red); }
+.opz-price { font-family:var(--mono); font-size:15px; font-weight:700; }
+.opz.high .opz-price { color:var(--green-d); }
+.opz.base .opz-price { color:var(--navy); }
+.opz.low  .opz-price { color:var(--red); }
+.opz-note { font-size:8px; color:var(--t3); margin-top:2px; font-family:var(--mono); }
+
+/* Fact rows */
+.fact-row { display:flex; align-items:flex-start; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); font-size:11px; color:var(--t1); line-height:1.5; }
+.fact-row:last-child { border-bottom:none; padding-bottom:0; }
+.fact-ic { font-size:13px; flex-shrink:0; margin-top:1px; }
+.fact-text { flex:1; }
+.fact-text strong { color:var(--tx); font-weight:600; }
+
 /* price targets */
 .targets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 10px; }
 .target {
@@ -761,9 +802,6 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
     <div class="sec-title" style="margin-top:4px">News Sentiment</div>
     <div id="newsSentiment"></div>
 
-    <!-- STOCK CARDS — populated when user searches or taps a ticker -->
-    <div id="cards"></div>
-
     <!-- ── DISCLAIMER ── -->
     <div class="disclaimer">
       <div class="disc-title">⚠️ Important Disclaimer</div>
@@ -845,37 +883,20 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
     <!-- ── OUTLOOK PANE ── -->
     <div class="sh-pane" id="sh-outlook">
 
-      <div class="outlook-card" id="shToday">
-        <div class="oc-header">
-          <div class="oc-icon">📅</div>
-          <div>
-            <div class="oc-title">Today's Outlook</div>
-            <div class="oc-sub" id="shTodayDate">—</div>
-          </div>
-        </div>
-        <div class="oc-body" id="shTodayBody">Loading...</div>
-      </div>
+      <!-- TODAY'S OUTLOOK -->
+      <div id="shTodayCard"></div>
 
-      <div class="outlook-card" id="shWeek">
-        <div class="oc-header">
-          <div class="oc-icon">📆</div>
-          <div>
-            <div class="oc-title">This Week's Outlook</div>
-            <div class="oc-sub" id="shWeekDate">—</div>
-          </div>
-        </div>
-        <div class="oc-body" id="shWeekBody">Loading...</div>
-      </div>
+      <!-- THIS WEEK'S OUTLOOK -->
+      <div id="shWeekCard"></div>
 
-      <div class="sh-section-label" style="margin-bottom:8px">Price Targets — 3 Month</div>
+      <!-- 3 MONTH TARGETS -->
+      <div class="sh-section-label" style="margin-bottom:8px">3-Month Price Targets</div>
       <div class="targets" id="shTargets"></div>
 
       <div class="cat-card" id="shBull">
         <div class="cat-card-hd bull">📈 What's driving it higher</div>
       </div>
-
       <div class="spacer"></div>
-
       <div class="cat-card" id="shBear">
         <div class="cat-card-hd bear">⚠️ Key risks to watch</div>
       </div>
@@ -1351,11 +1372,10 @@ function getQuickRec(px, pv, vwap, sym) {
 // ── OPEN SHEET ────────────────────────────────────────────────────────────────
 async function openSheet(sym) {
   S.selected = sym;
-  renderCards();
 
-  // Reset header
+  // Reset header — show ticker immediately, fetch company name
   document.getElementById('shSym').textContent  = sym;
-  document.getElementById('shNm').textContent   = tname(sym);
+  document.getElementById('shNm').textContent   = 'Loading...';
   document.getElementById('shRec').textContent  = '⚡ Analyzing...';
   document.getElementById('shRec').className    = 'sh-rec-big hold';
   document.getElementById('shPx').textContent   = '—';
@@ -1366,12 +1386,18 @@ async function openSheet(sym) {
   document.getElementById('sheet').classList.add('on');
   document.getElementById('bdrop').classList.add('on');
 
-  // Fetch fresh data
-  if (!S.quotes[sym]) {
-    const d = await api(`/api/quotes?symbols=${sym}`);
-    if (d?.[sym]) S.quotes[sym] = d[sym];
-  }
-  const bars = await api(`/api/bars/${sym}?timeframe=1D&limit=30`);
+  // Fetch quote, bars, and asset info (company name) in parallel
+  const [quoteData, bars, assetData] = await Promise.all([
+    S.quotes[sym] ? Promise.resolve(null) : api(`/api/quotes?symbols=${sym}`),
+    api(`/api/bars/${sym}?timeframe=1D&limit=30`),
+    api(`/api/asset/${sym}`),
+  ]);
+
+  if (quoteData?.[sym]) S.quotes[sym] = quoteData[sym];
+
+  // Set company name — use Alpaca asset name, fall back to known list, then ticker
+  const companyName = assetData?.name || tname(sym);
+  document.getElementById('shNm').textContent = companyName;
 
   const snap = S.quotes[sym];
   const px   = snap?.latestTrade?.p || snap?.dailyBar?.c;
@@ -1396,7 +1422,6 @@ function closeSheet() {
   document.getElementById('sheet').classList.remove('on');
   document.getElementById('bdrop').classList.remove('on');
   S.selected = null;
-  renderCards();
 }
 
 // ── KNOWN MA REFERENCE DATA ───────────────────────────────────────────────────
@@ -1685,10 +1710,8 @@ function buildAnalysis(sym, snap, bars) {
   // ── OUTLOOK PANE ──
   const now = new Date();
   const mktOpen = S.clock?.is_open;
-  document.getElementById('shTodayDate').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('shWeekDate').textContent  = `Week of ${getMonday()}`;
-  document.getElementById('shTodayBody').innerHTML   = buildTodayNarrative(sym, px, pv, rsi, vwapA, a50, a200, mktOpen, atr, cp, macd);
-  document.getElementById('shWeekBody').innerHTML    = buildWeekNarrative(sym, px, rsi, a50, a200, vwapA, macd, cp, ma, s1, r1);
+  buildTodayOutlook(sym, px, pv, rsi, vwapA, a50, a200, mktOpen, atr, cp, macd, ma, s1, r1, bbU, bbL, rvol);
+  buildWeekOutlook(sym, px, rsi, a50, a200, vwapA, macd, cp, ma, s1, r1, atr, rvol);
 
   const bullPx = (px*1.13).toFixed(2);
   const basePx = (px*1.05).toFixed(2);
@@ -1817,28 +1840,200 @@ function buildAnalysis(sym, snap, bars) {
 
 
 // ── TODAY NARRATIVE ───────────────────────────────────────────────────────────
-function buildTodayNarrative(sym, px, pv, rsi, vwapA, a50, a200, mktOpen, atr, cp, macd) {
-  const up = cp >= 0;
-  const rstStr = rsi>70?'RSI is in overbought territory at '+rsi.toFixed(0)+', suggesting the pace of gains may slow before the next leg higher.':
-    rsi<35?'RSI is oversold at '+rsi.toFixed(0)+', which often precedes a short-term bounce — watch for stabilization.':
-    'RSI at '+rsi.toFixed(0)+' sits in neutral territory, leaving room for the move to continue.';
+// ── TODAY OUTLOOK ─────────────────────────────────────────────────────────────
+function buildTodayOutlook(sym, px, pv, rsi, vwapA, a50, a200, mktOpen, atr, cp, macd, ma, s1, r1, bbU, bbL, rvol) {
+  const up   = cp >= 0;
+  const dir  = Math.abs(cp) < 0.4 ? 'neut' : up ? 'up' : 'dn';
+  const dirLabel = dir==='up' ? `↑ Bullish Today` : dir==='dn' ? `↓ Bearish Today` : `→ Neutral Today`;
+  const dirConf  = dir==='up'
+    ? `+${Math.abs(cp).toFixed(2)}% · buyers in control`
+    : dir==='dn'
+    ? `-${Math.abs(cp).toFixed(2)}% · sellers in control`
+    : `${cp.toFixed(2)}% · consolidating`;
 
-  return `${sym} is ${up?'up':'down'} <strong>${Math.abs(cp).toFixed(2)}% today</strong>, currently ${vwapA?'trading above VWAP — a bullish intraday signal that institutional buyers are supporting price':'trading below VWAP — indicating sellers have control of the intraday session'}. ${rstStr} MACD is ${macd>0?'positive, confirming momentum':'negative, suggesting near-term caution'}.<br><br>${mktOpen?'<strong>Market is open.</strong> The key level to watch today is $'+(vwapA?((px*1.025).toFixed(2))+' resistance and $'+((px*.975).toFixed(2))+' support':'$'+(px*1.02).toFixed(2)+' VWAP reclaim and $'+(px*.97).toFixed(2)+' downside')+'. A break and hold above VWAP would signal a shift to bullish intraday bias.':'<strong>Market is closed.</strong> When it opens, watch for the first 30-minute opening range to establish direction. ATR of $'+atr.toFixed(2)+' indicates the expected daily range.'}`;
+  // Expected price range for today (using ATR)
+  const todayHigh  = (px + atr * 0.6).toFixed(2);
+  const todayLow   = (px - atr * 0.6).toFixed(2);
+  const todayBase  = px.toFixed(2);
+
+  // VWAP as intraday pivot
+  const vwapPx = ma ? (px * (vwapA ? 0.99 : 1.01)).toFixed(2) : px.toFixed(2);
+
+  // Narrative sentence
+  const narrative = dir==='up'
+    ? `${sym} is advancing ${cp.toFixed(2)}% today with ${vwapA?'price holding above VWAP — institutional buyers are actively supporting the move':'momentum building toward a VWAP reclaim'}. ${rsi>70?'However RSI is elevated at '+rsi.toFixed(0)+', meaning the pace of the rally may slow intraday.':'RSI at '+rsi.toFixed(0)+' gives the stock room to continue higher without hitting overbought extremes.'} ${macd>0?'MACD is confirming positive momentum.':'Watch for MACD to confirm with a bullish cross.'}`
+    : dir==='dn'
+    ? `${sym} is under pressure, down ${Math.abs(cp).toFixed(2)}% today with ${!vwapA?'price trading below VWAP — sellers have had control of the session':'price briefly above VWAP but struggling to hold the level'}. ${rsi<35?'RSI is now oversold at '+rsi.toFixed(0)+' — this level of selling exhaustion often precedes a short-term bounce.':'RSI at '+rsi.toFixed(0)+' suggests the selling could continue before a meaningful bounce materialises.'} ${macd<0?'MACD is confirming the bearish momentum.':'Keep an eye on MACD for any early sign of a reversal.'}`
+    : `${sym} is flat to slightly ${cp>=0?'positive':'negative'} today (${cp.toFixed(2)}%), moving within a tight range. This kind of low-volatility session often signals that the market is waiting for a catalyst — a news event, volume spike, or broader market move — before committing to a direction.`;
+
+  // Supporting facts
+  const facts = [
+    {
+      ic: vwapA ? '✅' : '⚠️',
+      text: `<strong>VWAP at $${(px*(vwapA?0.99:1.01)).toFixed(2)}:</strong> Price is ${vwapA?'above':'below'} the volume-weighted average price — the key intraday institutional benchmark. ${vwapA?'This means the average buyer today is in profit and institutional flow is net bullish.':'Sellers are dominating and the average buyer today is underwater. A reclaim of VWAP would be the first bullish signal.'}`
+    },
+    {
+      ic: rsi>70?'🔴':rsi<35?'🟢':'🟡',
+      text: `<strong>Momentum (RSI ${rsi.toFixed(0)}):</strong> ${rsi>70?'Overbought — the move is stretched. Profit-taking risk is elevated and new buyers should wait for a pullback before entering.':rsi<35?'Oversold — selling has been excessive. A bounce or stabilization is increasingly likely in the near term.':'Neutral zone — momentum is balanced and the stock has room to move in either direction depending on volume and news flow.'}`
+    },
+    {
+      ic: macd>0?'📈':'📉',
+      text: `<strong>Trend confirmation (MACD):</strong> ${macd>0?'Positive — the medium-term momentum indicator is aligned bullishly, adding confidence to the upside move.':'Negative — medium-term momentum is still bearish. The stock needs a MACD bullish crossover to signal a genuine trend shift.'}`
+    },
+    {
+      ic: '📐',
+      text: `<strong>Today's expected range:</strong> Based on recent volatility (ATR $${atr.toFixed(2)}), the stock is expected to trade between roughly $${todayLow} on the low end and $${todayHigh} on the high end today. ${mktOpen?'Market is currently open.':'Market is currently closed — this range applies to the next session.'}`
+    },
+  ];
+
+  document.getElementById('shTodayCard').innerHTML = `
+    <div class="ol-card">
+      <div class="ol-card-hd">
+        <div class="ol-card-hd-icon">📅</div>
+        <div>
+          <div class="ol-card-hd-title">Today's Outlook</div>
+          <div class="ol-card-hd-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · ${mktOpen?'Market Open':'Market Closed'}</div>
+        </div>
+      </div>
+      <div class="ol-card-body">
+        <div class="ol-direction-banner ${dir}">
+          <div>
+            <div class="ol-dir-label">${dirLabel}</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:2px">${dirConf}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--t1)">Current</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx)">$${px.toFixed(2)}</div>
+          </div>
+        </div>
+
+        <div class="ol-price-zone">
+          <div class="opz high">
+            <div class="opz-label">Today High</div>
+            <div class="opz-price">$${todayHigh}</div>
+            <div class="opz-note">+ATR zone</div>
+          </div>
+          <div class="opz base">
+            <div class="opz-label">Current</div>
+            <div class="opz-price">$${todayBase}</div>
+            <div class="opz-note">Live price</div>
+          </div>
+          <div class="opz low">
+            <div class="opz-label">Today Low</div>
+            <div class="opz-price">$${todayLow}</div>
+            <div class="opz-note">-ATR zone</div>
+          </div>
+        </div>
+
+        <div class="ol-narrative">${narrative}</div>
+
+        <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
+        <div>
+          ${facts.map(f=>`<div class="fact-row"><div class="fact-ic">${f.ic}</div><div class="fact-text">${f.text}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
 }
 
-// ── WEEK NARRATIVE ────────────────────────────────────────────────────────────
-function buildWeekNarrative(sym, px, rsi, a50, a200, vwapA, macd, cp, ma, s1, r1) {
-  const trend = a50 && a200 ? 'in a confirmed uptrend above both the 50-day and 200-day moving averages' :
-    !a50 && !a200 ? 'in a downtrend, trading below both key moving averages' :
-    'in a mixed technical state — between the 50-day and 200-day moving averages';
+// ── WEEK OUTLOOK ──────────────────────────────────────────────────────────────
+function buildWeekOutlook(sym, px, rsi, a50, a200, vwapA, macd, cp, ma, s1, r1, atr, rvol) {
+  const weekBias = (a50 && a200 && macd>0) ? 'up' : (!a50 && !a200) ? 'dn' : 'neut';
+  const weekLabel = weekBias==='up' ? '↑ Bullish Bias This Week'
+    : weekBias==='dn' ? '↓ Bearish Bias This Week'
+    : '→ Neutral / Wait-and-See';
 
-  const weekBias = (a50 && a200 && macd>0) ? 'bullish' : (!a50 && !a200) ? 'cautious' : 'neutral';
+  // Weekly expected price ranges
+  const weekHigh = (px + atr * 2.2).toFixed(2);
+  const weekBase = (px * (weekBias==='up' ? 1.025 : weekBias==='dn' ? 0.975 : 1.0)).toFixed(2);
+  const weekLow  = (px - atr * 2.2).toFixed(2);
 
-  return `${sym} enters the week <strong>${trend}</strong>. The weekly bias is <strong>${weekBias}</strong> — ${weekBias==='bullish'?'the path of least resistance is higher as long as $'+s1.toFixed(0)+' support holds':weekBias==='cautious'?'price needs to reclaim $'+ma.ma50.toFixed(0)+' (50-day SMA) to shift sentiment positive':'the stock needs a catalyst to break out of this range'}.<br><br><strong>Key levels this week:</strong> Support at $${s1.toFixed(0)} (200-day SMA zone) — a break below would signal meaningful weakness. Resistance at $${r1.toFixed(0)} — a close above this level would be a positive signal.<br><br>${rsi>65?'⚠️ RSI is elevated at '+rsi.toFixed(0)+'. The risk of a short-term pullback is higher than normal this week. Any dip toward support could be a better entry point.':rsi<40?'RSI at '+rsi.toFixed(0)+' suggests the stock is washed out. A weekly close above $'+r1.toFixed(0)+' would confirm a reversal.':'RSI is in neutral territory at '+rsi.toFixed(0)+', giving the stock room to move in either direction this week.'}`;
+  // Key levels this week
+  const keySupport    = parseFloat(s1).toFixed(2);
+  const keyResistance = parseFloat(r1).toFixed(2);
+
+  // Weekly narrative
+  const narrative = weekBias==='up'
+    ? `${sym} enters this week with a <strong>bullish technical structure</strong>. Price is above both the 50-day average ($${ma.ma50.toFixed(0)}) and 200-day average ($${ma.ma200.toFixed(0)}), which tells us institutional investors following trend-based rules are likely holding or adding to positions. The path of least resistance is higher. The base case price target for this week is around <strong>$${weekBase}</strong>, with $${weekHigh} achievable if buyers push above resistance. The key condition to watch: support at $${keySupport} must hold — a break below would shift the bias negative.`
+    : weekBias==='dn'
+    ? `${sym} enters this week with a <strong>bearish technical structure</strong>. Price is below both the 50-day ($${ma.ma50.toFixed(0)}) and 200-day ($${ma.ma200.toFixed(0)}) moving averages, meaning systematic institutional funds are likely reducing exposure. The path of least resistance is lower. The base case for this week is around <strong>$${weekBase}</strong>, with $${weekLow} possible if selling continues. A recovery above $${keyResistance} (50-day SMA) would be the first sign of a genuine reversal.`
+    : `${sym} enters this week in a <strong>transitional, wait-and-see zone</strong> — caught between the 50-day and 200-day moving averages. The market has not yet decided direction. The base case this week is roughly <strong>$${weekBase}</strong> with the stock likely to oscillate between $${weekLow} support and $${weekHigh} resistance. A decisive break above $${keyResistance} would shift the bias bullish. A break below $${keySupport} would shift it bearish.`;
+
+  // Weekly supporting facts
+  const weekFacts = [
+    {
+      ic: a50&&a200?'✅':!a50&&!a200?'❌':'⚠️',
+      text: `<strong>Trend alignment:</strong> ${a50&&a200?'Both the 50-day ($'+ma.ma50.toFixed(0)+') and 200-day ($'+ma.ma200.toFixed(0)+') moving averages are below price — a bullish structure that historically attracts institutional accumulation on any weakness.':!a50&&!a200?'Price is below both key moving averages ($'+ma.ma50.toFixed(0)+' and $'+ma.ma200.toFixed(0)+'). Institutional sellers following systematic rules will be reducing positions this week.':'Price is between the 50-day ($'+ma.ma50.toFixed(0)+') and 200-day ($'+ma.ma200.toFixed(0)+') — a contested zone where direction depends on the next catalyst.'}`
+    },
+    {
+      ic: '🎯',
+      text: `<strong>Key levels to watch this week:</strong> Support at <strong>$${keySupport}</strong> — this is where long-term buyers are likely to step in. If this breaks, expect accelerated selling. Resistance at <strong>$${keyResistance}</strong> — a weekly close above this level would confirm the bullish bias and likely attract momentum buyers.`
+    },
+    {
+      ic: rsi>65?'🔴':rsi<40?'🟢':'🟡',
+      text: `<strong>Momentum entering the week (RSI ${rsi.toFixed(0)}):</strong> ${rsi>65?'Elevated — the stock enters the week stretched to the upside. Risk of a mid-week pullback before a continuation. Buyers should wait for dips rather than chasing at current levels.':rsi<40?'Weak — the stock enters the week oversold. A bounce or stabilization is increasingly likely this week. Watch for a volume pickup as confirmation of a bottom.':'Neutral — RSI gives the stock room to move in either direction. The next catalyst or volume event will likely determine the weekly direction.'}`
+    },
+    {
+      ic: rvol && rvol>1.3?'🏦':'📊',
+      text: `<strong>Institutional activity:</strong> ${rvol && rvol>1.3?'Last session saw above-average volume ('+rvol.toFixed(1)+'× normal). Large funds are actively involved — this week\'s price action will likely see continued institutional participation.':rvol && rvol<0.7?'Last session had below-average volume. Institutions were quiet. This week watch for a volume expansion as the signal of the next directional move.':'Normal volume last session. No unusual institutional footprint. The stock is in a natural price discovery phase this week.'}`
+    },
+    {
+      ic: macd>0?'📈':'📉',
+      text: `<strong>Weekly momentum trend (MACD):</strong> ${macd>0?'Positive and above signal line — medium-term momentum is aligned bullishly going into this week. Supports the case for higher prices if no negative catalyst emerges.':'Negative — medium-term momentum is still bearish going into this week. The stock needs a MACD bullish crossover before the weekly bias meaningfully shifts positive.'}`
+    },
+  ];
+
+  document.getElementById('shWeekCard').innerHTML = `
+    <div class="ol-card">
+      <div class="ol-card-hd">
+        <div class="ol-card-hd-icon">📆</div>
+        <div>
+          <div class="ol-card-hd-title">This Week's Outlook</div>
+          <div class="ol-card-hd-sub">Week of ${getMonday()}</div>
+        </div>
+      </div>
+      <div class="ol-card-body">
+        <div class="ol-direction-banner ${weekBias}">
+          <div>
+            <div class="ol-dir-label">${weekLabel}</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:2px">${a50&&a200?'Both MAs below price':'${!a50&&!a200?\'Both MAs above price\':\'Between key MAs\'}'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--t3);font-weight:600">BASE CASE</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx)">$${weekBase}</div>
+          </div>
+        </div>
+
+        <div class="ol-price-zone">
+          <div class="opz high">
+            <div class="opz-label">Week High</div>
+            <div class="opz-price">$${weekHigh}</div>
+            <div class="opz-note">Bull scenario</div>
+          </div>
+          <div class="opz base">
+            <div class="opz-label">Base Case</div>
+            <div class="opz-price">$${weekBase}</div>
+            <div class="opz-note">Most likely</div>
+          </div>
+          <div class="opz low">
+            <div class="opz-label">Week Low</div>
+            <div class="opz-price">$${weekLow}</div>
+            <div class="opz-note">Bear scenario</div>
+          </div>
+        </div>
+
+        <div class="ol-narrative">${narrative}</div>
+
+        <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
+        <div>
+          ${weekFacts.map(f=>`<div class="fact-row"><div class="fact-ic">${f.ic}</div><div class="fact-text">${f.text}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
 }
 
-// ── REASONS ───────────────────────────────────────────────────────────────────
-// ── CATALYSTS ────────────────────────────────────────────────────────────────
+// ── OLD FUNCTIONS REPLACED ─────────────────────────────────────────────────────
+function buildTodayNarrative() { return ''; }
+function buildWeekNarrative()  { return ''; }
 function getCatalysts(sym, px, cp, a50, a200, rsi, vwapA) {
   const base = {
     bull: [
