@@ -351,14 +351,14 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 }
 .sh-tab {
   flex: 1; text-align: center; padding: 9px 0;
-  font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  font-size: 13px; font-weight: 700; letter-spacing: .03em;
   text-transform: uppercase; color: var(--t3); cursor: pointer;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: all .15s;
 }
 .sh-tab.on { color: var(--navy); border-bottom-color: var(--navy); }
 
-.sh-pane { display: none; padding: 16px 16px 0; }
+.sh-pane { display: none; padding: 16px 14px 0; }
 .sh-pane.on { display: block; }
 
 /* ── SUMMARY PANE ── */
@@ -386,12 +386,12 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .stat-card {
   background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--r-sm); padding: 10px 11px;
+  border-radius: var(--r-sm); padding: 13px 11px;
   box-shadow: var(--shadow);
 }
-.stat-label { font-size: 9px; font-weight: 700; color: var(--t3); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
-.stat-val   { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--tx); }
-.stat-sub   { font-size: 9px; color: var(--t3); margin-top: 2px; font-family: var(--mono); }
+.stat-label { font-size: 11px; font-weight: 700; color: var(--t2); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 5px; }
+.stat-val   { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--tx); }
+.stat-sub   { font-size: 11px; color: var(--t2); margin-top: 3px; font-family: var(--mono); }
 .stat-val.g { color: var(--green-d); }
 .stat-val.r { color: var(--red); }
 .stat-val.a { color: var(--amber); }
@@ -411,60 +411,60 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 
 /* ── RICH OUTLOOK CARDS ── */
 .ol-card { background:var(--card); border-radius:var(--r); border:1px solid var(--border); margin-bottom:10px; overflow:hidden; box-shadow:var(--shadow); }
-.ol-card-hd { display:flex; align-items:center; gap:10px; padding:13px 14px 10px; border-bottom:1px solid var(--border); }
-.ol-card-hd-icon { font-size:18px; flex-shrink:0; }
-.ol-card-hd-title { font-size:13px; font-weight:700; color:var(--tx); }
-.ol-card-hd-sub { font-size:10px; color:var(--t2); margin-top:1px; }
-.ol-card-body { padding:12px 14px; }
-.ol-direction-banner { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:var(--r-sm); margin-bottom:10px; border:1px solid; }
+.ol-card-hd { display:flex; align-items:center; gap:12px; padding:16px 16px 13px; border-bottom:1px solid var(--border); }
+.ol-card-hd-icon { font-size:22px; flex-shrink:0; }
+.ol-card-hd-title { font-size:15px; font-weight:700; color:var(--tx); }
+.ol-card-hd-sub { font-size:12px; color:var(--t2); margin-top:3px; }
+.ol-card-body { padding:15px 16px; }
+.ol-direction-banner { display:flex; align-items:center; justify-content:space-between; padding:14px 15px; border-radius:var(--r-sm); margin-bottom:14px; border:1px solid; }
 .ol-direction-banner.up   { background:var(--green-bg); border-color:var(--green-brd); }
 .ol-direction-banner.dn   { background:var(--red-bg);   border-color:var(--red-brd); }
 .ol-direction-banner.neut { background:var(--amber-bg); border-color:var(--amber-brd); }
-.ol-dir-label { font-size:13px; font-weight:700; }
+.ol-dir-label { font-size:16px; font-weight:700; }
 .ol-direction-banner.up   .ol-dir-label { color:var(--green-d); }
 .ol-direction-banner.dn   .ol-dir-label { color:var(--red); }
 .ol-direction-banner.neut .ol-dir-label { color:var(--amber); }
 .ol-dir-conf { font-family:var(--mono); font-size:11px; font-weight:600; }
-.ol-narrative { font-size:12px; color:var(--t1); line-height:1.7; margin-bottom:10px; }
+.ol-narrative { font-size:14px; color:var(--t1); line-height:1.8; margin-bottom:14px; }
 
 /* Price zones */
-.ol-price-zone { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px; }
-.opz { padding:9px 10px; border-radius:var(--r-sm); text-align:center; border:1px solid; }
+.ol-price-zone { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+.opz { padding:12px 10px; border-radius:var(--r-sm); text-align:center; border:1px solid; }
 .opz.high { background:var(--green-bg); border-color:var(--green-brd); }
 .opz.base { background:#EEF2FF; border-color:rgba(27,45,91,.15); }
 .opz.low  { background:var(--red-bg); border-color:var(--red-brd); }
-.opz-label { font-size:8px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; font-family:var(--mono); margin-bottom:3px; }
+.opz-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; font-family:var(--mono); margin-bottom:5px; }
 .opz.high .opz-label { color:var(--green-d); }
 .opz.base .opz-label { color:var(--navy); }
 .opz.low  .opz-label { color:var(--red); }
-.opz-price { font-family:var(--mono); font-size:15px; font-weight:700; }
+.opz-price { font-family:var(--mono); font-size:17px; font-weight:700; }
 .opz.high .opz-price { color:var(--green-d); }
 .opz.base .opz-price { color:var(--navy); }
 .opz.low  .opz-price { color:var(--red); }
-.opz-note { font-size:8px; color:var(--t3); margin-top:2px; font-family:var(--mono); }
+.opz-note { font-size:11px; color:var(--t3); margin-top:3px; font-family:var(--mono); }
 
 /* Fact rows */
-.fact-row { display:flex; align-items:flex-start; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); font-size:11px; color:var(--t1); line-height:1.5; }
+.fact-row { display:flex; align-items:flex-start; gap:11px; padding:11px 0; border-bottom:1px solid var(--border); font-size:13px; color:var(--t1); line-height:1.65; }
 .fact-row:last-child { border-bottom:none; padding-bottom:0; }
-.fact-ic { font-size:13px; flex-shrink:0; margin-top:1px; }
+.fact-ic { font-size:17px; flex-shrink:0; margin-top:1px; }
 .fact-text { flex:1; }
 .fact-text strong { color:var(--tx); font-weight:600; }
 
 /* price targets */
-.targets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+.targets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
 .target {
-  padding: 11px 10px; border-radius: var(--r-sm);
-  text-align: center; border: 1px solid;
+  padding: 14px 10px; border-radius: var(--r-sm);
+  border: 1px solid;
 }
 .target.bull { background: var(--green-bg); border-color: var(--green-brd); }
 .target.base { background: var(--amber-bg); border-color: var(--amber-brd); }
 .target.bear { background: var(--red-bg);   border-color: var(--red-brd); }
-.target-label { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+.target-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; text-align:center; }
 .target.bull .target-label { color: var(--green-d); }
 .target.base .target-label { color: var(--amber); }
 .target.bear .target-label { color: var(--red); }
-.target-px { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--tx); }
-.target-pct { font-family: var(--mono); font-size: 10px; margin-top: 2px; }
+.target-px { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--tx); display:block; text-align:center; }
+.target-pct { font-family: var(--mono); font-size: 12px; margin-top: 4px; display:block; text-align:center; }
 .target.bull .target-pct { color: var(--green-d); }
 .target.base .target-pct { color: var(--amber); }
 .target.bear .target-pct { color: var(--red); }
@@ -476,26 +476,26 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   margin-bottom: 10px; box-shadow: var(--shadow);
 }
 .cat-card-hd {
-  padding: 10px 14px 8px;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--border);
-  font-size: 11px; font-weight: 700; letter-spacing: .05em;
-  text-transform: uppercase; display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; letter-spacing: .03em;
+  text-transform: uppercase; display: flex; align-items: center; gap: 8px;
 }
 .cat-card-hd.bull { color: var(--green-d); background: var(--green-bg); }
 .cat-card-hd.bear { color: var(--red);     background: var(--red-bg); }
 .cat-item {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 14px;
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--border);
-  font-size: 12px; color: var(--t1); line-height: 1.5;
+  font-size: 13px; color: var(--t1); line-height: 1.65;
 }
 .cat-item:last-child { border-bottom: none; }
 .cat-num {
-  width: 20px; height: 20px; border-radius: 50%;
+  width: 24px; height: 24px; border-radius: 50%;
   background: var(--card2); border: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: var(--t2);
-  flex-shrink: 0; margin-top: 1px;
+  font-size: 11px; font-weight: 700; color: var(--t2);
+  flex-shrink: 0; margin-top: 2px;
 }
 
 /* analyst row */
@@ -1705,32 +1705,32 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
     ${sm.keyStrength || sm.keyRisk ? `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
       ${sm.keyStrength ? `<div style="background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm);padding:10px 12px">
-        <div style="font-size:9px;font-weight:700;color:var(--green-d);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">✅ Key Strength</div>
-        <div style="font-size:11px;color:var(--t1);line-height:1.5">${sm.keyStrength}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--green-d);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">✅ Key Strength</div>
+        <div style="font-size:13px;color:var(--t1);line-height:1.65">${sm.keyStrength}</div>
       </div>` : ''}
       ${sm.keyRisk ? `<div style="background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm);padding:10px 12px">
-        <div style="font-size:9px;font-weight:700;color:var(--red);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">⚠️ Key Risk</div>
-        <div style="font-size:11px;color:var(--t1);line-height:1.5">${sm.keyRisk}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--red);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">⚠️ Key Risk</div>
+        <div style="font-size:13px;color:var(--t1);line-height:1.65">${sm.keyRisk}</div>
       </div>` : ''}
     </div>` : ''}
     ${sm.institutionalSignal ? `
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--navy)">
       <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:4px">🏦 Institutional Signal</div>
-      <div style="font-size:11px;color:var(--t1);line-height:1.65">${sm.institutionalSignal}</div>
+      <div style="font-size:13px;color:var(--t1);line-height:1.72">${sm.institutionalSignal}</div>
     </div>` : ''}
     ${sm.marketContext ? `
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--blue,#3D8EFF)">
       <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:4px">🌐 Market Context</div>
-      <div style="font-size:11px;color:var(--t1);line-height:1.65">${sm.marketContext}</div>
+      <div style="font-size:13px;color:var(--t1);line-height:1.72">${sm.marketContext}</div>
     </div>` : ''}
     ${insights.map(c=>`
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--navy)">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
         <span style="font-size:14px">${c.icon||'📊'}</span>
-        <span style="font-size:11px;font-weight:700;color:var(--tx)">${c.title}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--tx)">${c.title}</span>
         <span style="margin-left:auto;font-size:8px;color:var(--t3);font-family:var(--mono);background:var(--card);padding:1px 6px;border-radius:8px;border:1px solid var(--border)">GPT-4o</span>
       </div>
-      <div style="font-size:11px;color:var(--t1);line-height:1.65">${c.body}</div>
+      <div style="font-size:13px;color:var(--t1);line-height:1.72">${c.body}</div>
     </div>`).join('')}`;
 
   // ── KEY STATS ──
@@ -1795,34 +1795,34 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   : anTotal > 0 ? `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
       <div>
-        <div style="font-size:18px;font-weight:800;color:var(--navy)">${anRating}</div>
-        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-top:2px">${anTotal} Wall Street analysts · Live from FMP</div>
+        <div style="font-size:20px;font-weight:800;color:var(--navy)">${anRating}</div>
+        <div style="font-size:12px;color:var(--t2);font-family:var(--mono);margin-top:3px">${anTotal} Wall Street analysts · Live from FMP</div>
       </div>
       <div style="text-align:right">
-        <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green-d)">$${parseFloat(anTarget).toFixed(2)}</div>
-        <div style="font-size:10px;font-weight:700;color:${upsideCol};font-family:var(--mono);margin-top:1px">${upsideStr}</div>
-        <div style="font-size:9px;color:var(--t3);font-family:var(--mono)">12-mo consensus target</div>
+        <div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--green-d)">$${parseFloat(anTarget).toFixed(2)}</div>
+        <div style="font-size:12px;font-weight:700;color:${upsideCol};font-family:var(--mono);margin-top:2px">${upsideStr}</div>
+        <div style="font-size:11px;color:var(--t3);font-family:var(--mono)">12-mo consensus target</div>
       </div>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:12px">
       ${[['Buy',anBuy,'var(--green)','var(--green-d)'],['Hold',anHold,'var(--amber)','var(--amber)'],['Sell',anSell,'var(--red)','var(--red)']].map(([label,count,col,textCol])=>`
         <div style="flex:1;text-align:center">
-          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:${textCol}">${count}</div>
+          <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:${textCol}">${count}</div>
           <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin:4px 0">
             <div style="height:100%;width:${anTotal?(count/anTotal*100).toFixed(0):0}%;background:${col};border-radius:3px"></div>
           </div>
-          <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono)">${label.toUpperCase()}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--t3);font-family:var(--mono)">${label.toUpperCase()}</div>
         </div>`).join('')}
     </div>
     <div style="height:1px;background:var(--border);margin-bottom:10px"></div>
     ${[['Next earnings',anEarnDate+' · '+anEarnEPS],['P/E ratio',anPE],['Sector',anSector],
        ['Target range',fmp?.targetLow&&fmp?.targetHigh?'$'+parseFloat(fmp.targetLow).toFixed(0)+' – $'+parseFloat(fmp.targetHigh).toFixed(0):'—']
     ].map(([l,v])=>`
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600">${l}</span>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <span style="color:var(--t2);font-weight:600;font-size:13px">${l}</span>
         <span style="color:var(--tx);font-family:var(--mono);font-weight:600;max-width:60%;text-align:right">${v}</span>
       </div>`).join('')}
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;margin-top:10px;font-size:10px;color:var(--t2);line-height:1.65;font-style:italic">
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 13px;margin-top:12px;font-size:12px;color:var(--t2);line-height:1.75;font-style:italic">
       📌 ${ai.analystNote||''}
     </div>`
   : `<div style="font-size:12px;color:var(--t1);line-height:1.65">${ai.analystNote||'No analyst data available.'}</div>`;
@@ -1867,15 +1867,15 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
 
         ${tod.keyLevelToWatch ? `
         <div style="background:var(--navy);border-radius:var(--r-sm);padding:9px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:10px;color:rgba(255,255,255,.6);font-family:var(--mono)">🎯 KEY LEVEL TO WATCH TODAY</div>
-          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:#fff">$${parseFloat(todKey).toFixed(2)}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6);font-family:var(--mono)">🎯 KEY LEVEL TO WATCH TODAY</div>
+          <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#fff">$${parseFloat(todKey).toFixed(2)}</div>
         </div>
-        ${tod.keyLevelReason ? `<div style="font-size:11px;color:var(--t2);margin-bottom:10px;line-height:1.5;font-style:italic">${tod.keyLevelReason}</div>` : ''}` : ''}
+        ${tod.keyLevelReason ? `<div style="font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.6;font-style:italic">${tod.keyLevelReason}</div>` : ''}` : ''}
 
         <div class="ol-narrative">${tod.narrative||''}</div>
 
         ${(tod.facts||[]).length ? `
-          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Analysis</div>
+          <div style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;font-family:var(--mono)">Supporting Analysis</div>
           <div>${(tod.facts||[]).map(f=>`
             <div class="fact-row">
               <div class="fact-ic">${f.icon||'📌'}</div>
@@ -1923,26 +1923,26 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         <!-- Weekly price scenarios -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
           <div style="background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm);padding:9px;text-align:center">
-            <div style="font-size:8px;font-weight:700;color:var(--green-d);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bull Case</div>
-            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green-d)">$${parseFloat(wkBull).toFixed(2)}</div>
-            <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:2px">${t3m.probabilityBull||'—'}% prob</div>
+            <div style="font-size:11px;font-weight:700;color:var(--green-d);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">Bull Case</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green-d)">$${parseFloat(wkBull).toFixed(2)}</div>
+            <div style="font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:3px">${t3m.probabilityBull||'—'}% prob</div>
           </div>
           <div style="background:#EEF2FF;border:1px solid rgba(27,45,91,.15);border-radius:var(--r-sm);padding:9px;text-align:center">
-            <div style="font-size:8px;font-weight:700;color:var(--navy);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Base Case</div>
-            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--navy)">$${parseFloat(wkBase).toFixed(2)}</div>
-            <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:2px">${t3m.probabilityBase||'—'}% prob</div>
+            <div style="font-size:11px;font-weight:700;color:var(--navy);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">Base Case</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--navy)">$${parseFloat(wkBase).toFixed(2)}</div>
+            <div style="font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:3px">${t3m.probabilityBase||'—'}% prob</div>
           </div>
           <div style="background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm);padding:9px;text-align:center">
-            <div style="font-size:8px;font-weight:700;color:var(--red);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bear Case</div>
-            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--red)">$${parseFloat(wkBear).toFixed(2)}</div>
-            <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:2px">${t3m.probabilityBear||'—'}% prob</div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">Bear Case</div>
+            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--red)">$${parseFloat(wkBear).toFixed(2)}</div>
+            <div style="font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:3px">${t3m.probabilityBear||'—'}% prob</div>
           </div>
         </div>
 
         <div class="ol-narrative">${wk.narrative||''}</div>
 
         ${(wk.facts||[]).length ? `
-          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Weekly Supporting Analysis</div>
+          <div style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;font-family:var(--mono)">Weekly Supporting Analysis</div>
           <div>${(wk.facts||[]).map(f=>`
             <div class="fact-row">
               <div class="fact-ic">${f.icon||'📌'}</div>
@@ -2011,20 +2011,20 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         ${tp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(tp.reading)};font-family:var(--mono)">${tp.reading}</span>` : ''}
       </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${tp.explanation||ind.trendInsight||''}</div>
+        <div style="font-size:14px;color:var(--t1);line-height:1.8;margin-bottom:14px">${tp.explanation||ind.trendInsight||''}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Short Term (50d)</div>
-            <div style="font-size:13px;font-weight:700;color:${a50?'var(--green-d)':'var(--red)'}">${a50?'✓ Bullish':'✗ Bearish'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">SMA50 $${ma.ma50.toFixed(0)}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--t2);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">Short Term (50d)</div>
+            <div style="font-size:14px;font-weight:700;color:${a50?'var(--green-d)':'var(--red)'}">${a50?'✓ Bullish':'✗ Bearish'}</div>
+            <div style="font-size:11px;color:var(--t2);font-family:var(--mono);margin-top:3px">SMA50 $${ma.ma50.toFixed(0)}</div>
           </div>
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Long Term (200d)</div>
+            <div style="font-size:11px;font-weight:700;color:var(--t2);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">Long Term (200d)</div>
             <div style="font-size:13px;font-weight:700;color:${a200?'var(--green-d)':'var(--red)'}">${a200?'✓ Intact':'✗ Broken'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">SMA200 $${ma.ma200.toFixed(0)}</div>
+            <div style="font-size:11px;color:var(--t2);font-family:var(--mono);margin-top:3px">SMA200 $${ma.ma200.toFixed(0)}</div>
           </div>
         </div>
-        ${tp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+        ${tp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:11px 13px;font-size:13px;color:var(--amber);line-height:1.6">
           <strong>👁 Watch:</strong> ${tp.whatToWatch}
         </div>` : ''}
       </div>
@@ -2037,7 +2037,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         ${mp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(mp.reading)};font-family:var(--mono)">${mp.reading}</span>` : ''}
       </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${mp.explanation||ind.momentumInsight||''}</div>
+        <div style="font-size:14px;color:var(--t1);line-height:1.8;margin-bottom:14px">${mp.explanation||ind.momentumInsight||''}</div>
         <div style="margin-bottom:8px">
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t2);font-family:var(--mono);margin-bottom:4px">
             <span>RSI ${rsi.toFixed(0)}</span>
@@ -2047,7 +2047,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
             <div style="height:100%;width:${rsi}%;background:${rsi>70?'var(--red)':rsi<35?'var(--green)':'var(--navy)'};border-radius:4px"></div>
           </div>
         </div>
-        ${mp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+        ${mp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:11px 13px;font-size:13px;color:var(--amber);line-height:1.6">
           <strong>👁 Watch:</strong> ${mp.whatToWatch}
         </div>` : ''}
       </div>
@@ -2060,20 +2060,20 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         ${vp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(vp.reading)};font-family:var(--mono)">${vp.reading}</span>` : ''}
       </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${vp.explanation||ind.volumeInsight||''}</div>
+        <div style="font-size:14px;color:var(--t1);line-height:1.8;margin-bottom:14px">${vp.explanation||ind.volumeInsight||''}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Volume Level</div>
-            <div style="font-size:13px;font-weight:700;color:${rvolCol2}">${rvolLabel2}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">RVOL ${rvol?rvol.toFixed(2)+'×':'—'}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--t2);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">Volume Level</div>
+            <div style="font-size:15px;font-weight:700;color:${rvolCol2}">${rvolLabel2}</div>
+            <div style="font-size:11px;color:var(--t2);font-family:var(--mono);margin-top:3px">RVOL ${rvol?rvol.toFixed(2)+'×':'—'}</div>
           </div>
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">VWAP Signal</div>
+            <div style="font-size:11px;font-weight:700;color:var(--t2);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">VWAP Signal</div>
             <div style="font-size:13px;font-weight:700;color:${vwapA?'var(--green-d)':'var(--red)'}">${vwapA?'✓ Above':'✗ Below'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Inst. benchmark</div>
+            <div style="font-size:11px;color:var(--t2);font-family:var(--mono);margin-top:3px">Inst. benchmark</div>
           </div>
         </div>
-        ${vp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+        ${vp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:11px 13px;font-size:13px;color:var(--amber);line-height:1.6">
           <strong>👁 Watch:</strong> ${vp.whatToWatch}
         </div>` : ''}
       </div>
@@ -2086,19 +2086,19 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         ${vlp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(vlp.reading)};font-family:var(--mono)">${vlp.reading}</span>` : ''}
       </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${vlp.explanation||ind.volatilityInsight||''}</div>
+        <div style="font-size:14px;color:var(--t1);line-height:1.8;margin-bottom:14px">${vlp.explanation||ind.volatilityInsight||''}</div>
         <div style="margin-bottom:10px">
-          <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-bottom:4px">Price position within recent trading band</div>
+          <div style="font-size:12px;color:var(--t2);font-family:var(--mono);margin-bottom:5px">Price position within recent trading band</div>
           <div style="height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
             <div style="height:100%;width:${bbPct2}%;background:${bbPct2>80?'var(--red)':bbPct2<20?'var(--green)':'var(--navy)'};border-radius:4px"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);font-family:var(--mono)">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);font-family:var(--mono)">
             <span>Lower $${bbL.toFixed(0)}</span>
             <span style="color:var(--navy);font-weight:600">${bbPct2}% of band · ATR $${atr.toFixed(2)}/day</span>
             <span>Upper $${bbU.toFixed(0)}</span>
           </div>
         </div>
-        ${vlp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+        ${vlp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:11px 13px;font-size:13px;color:var(--amber);line-height:1.6">
           <strong>👁 Watch:</strong> ${vlp.whatToWatch}
         </div>` : ''}
       </div>
@@ -2106,16 +2106,16 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
 
     <!-- DATA SOURCES -->
     <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:10px">
-      <div style="font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);margin-bottom:7px">📋 Analysis Sources & Methodology</div>
+      <div style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.05em;text-transform:uppercase;font-family:var(--mono);margin-bottom:9px">📋 Analysis Sources & Methodology</div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Live price, volume, VWAP — Alpaca Markets API (real-time)</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> RSI, MACD, Bollinger Bands — computed from 220 days of actual bar data</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> SMA 50 & SMA 200 — calculated from real closing prices, not estimates</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> AI narrative — GPT-4o Senior Analyst reading live data in real time</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> News context — Alpaca News API (latest headlines for this ticker)</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Analyst consensus — Financial Modeling Prep API (live Wall Street data)</div>
+        <div style="font-size:12px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Live price, volume, VWAP — Alpaca Markets API (real-time)</div>
+        <div style="font-size:12px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> RSI, MACD, Bollinger Bands — computed from 220 days of actual bar data</div>
+        <div style="font-size:12px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> SMA 50 & SMA 200 — calculated from real closing prices, not estimates</div>
+        <div style="font-size:12px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> AI narrative — GPT-4o Senior Analyst reading live data in real time</div>
+        <div style="font-size:12px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> News context — Alpaca News API (latest headlines for this ticker)</div>
+        <div style="font-size:12px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Analyst consensus — Financial Modeling Prep API (live Wall Street data)</div>
       </div>
-      ${ai.disclaimer ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:9px;color:var(--t3);line-height:1.6">${ai.disclaimer}</div>` : ''}
+      ${ai.disclaimer ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--t3);line-height:1.65">${ai.disclaimer}</div>` : ''}
     </div>`;
 }
 
