@@ -865,30 +865,18 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
     <!-- ── SUMMARY PANE ── -->
     <div class="sh-pane on" id="sh-summary">
 
-      <div class="summary-hero">
-        <div class="sh-section-label">AI Analyst Verdict</div>
-        <div class="verdict-statement" id="shVerdict">Analyzing stock...</div>
-        <div class="reason-list" id="shReasons"></div>
+      <!-- ── AI INTELLIGENCE SUMMARY ── -->
+      <div id="shAISummary">
+        <!-- Populated by renderAIAnalysis() -->
       </div>
 
+      <!-- ── QUICK STATS ── -->
       <div class="stats-grid" id="shStats"></div>
 
+      <!-- ── ANALYST CONSENSUS ── -->
       <div class="ind-card">
         <div class="ind-card-hd">Analyst Consensus</div>
         <div id="shAnalyst" style="padding:14px"></div>
-      </div>
-
-      <!-- DATA SOURCES TRANSPARENCY -->
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);margin-bottom:8px">📋 How This Analysis Is Built</div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span>Live price & volume data from Alpaca Markets API</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span>RSI computed from last 14 sessions of actual bar data</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span>MACD derived from 12/26 exponential moving averages</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span>Bollinger Bands from 20-session standard deviation</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span>Analyst consensus from Wall Street coverage (June 2026)</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--t2)"><span style="color:var(--amber);font-weight:700">⚠</span>Analyst targets & fundamentals updated periodically — not real-time</div>
-        </div>
       </div>
 
     </div>
@@ -1529,10 +1517,9 @@ function showAnalysisLoading(sym) {
       </div>
     </div>`;
 
-  document.getElementById('shVerdict').innerHTML = 'Analyzing...';
-  document.getElementById('shReasons').innerHTML = loadHtml;
-  document.getElementById('shStats').innerHTML   = '';
-  document.getElementById('shAnalyst').innerHTML = loadHtml;
+  document.getElementById('shAISummary').innerHTML = loadHtml;
+  document.getElementById('shStats').innerHTML     = '';
+  document.getElementById('shAnalyst').innerHTML   = loadHtml;
   document.getElementById('shTodayCard').innerHTML = loadHtml;
   document.getElementById('shWeekCard').innerHTML  = loadHtml;
   document.getElementById('shTargets').innerHTML   = '';
@@ -1691,60 +1678,167 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   document.getElementById('shConfBar').style.background = confCol;
   document.getElementById('shConfPct').textContent      = conf+'% confidence · GPT-4o';
 
-  const sm = ai.summary || {};
+  // ── AI INTELLIGENCE SUMMARY — spec-compliant layout ──────────────────────
+  const sm  = ai.aiSummary  || ai.summary || {};
+  const kl  = sm.keyLevels  || {};
+  const ps  = sm.priceScenarios || {};
+  const drivers = sm.keyDrivers || [];
+  const risks   = sm.keyRisks   || [];
 
-  // ── SUMMARY VERDICT ──
-  document.getElementById('shVerdict').innerHTML =
-    `<strong>${sm.headline || ai.verdictHeadline || ''}</strong>
-    <br><br>${sm.overallVerdict || ai.verdictBody || ''}
-    ${sm.whatIsHappening ? `<br><br><span style="color:var(--t1)">${sm.whatIsHappening}</span>` : ''}`;
+  const verdictColor = {
+    'Bullish':           'var(--green-d)',
+    'Cautiously Bullish':'var(--green-d)',
+    'Neutral':           'var(--amber)',
+    'Cautiously Bearish':'var(--red)',
+    'Bearish':           'var(--red)',
+  }[sm.verdict] || 'var(--amber)';
+  const verdictBg = {
+    'Bullish':           'var(--green-bg)',
+    'Cautiously Bullish':'var(--green-bg)',
+    'Neutral':           'var(--amber-bg)',
+    'Cautiously Bearish':'var(--red-bg)',
+    'Bearish':           'var(--red-bg)',
+  }[sm.verdict] || 'var(--amber-bg)';
+  const verdictBrd = {
+    'Bullish':           'var(--green-brd)',
+    'Cautiously Bullish':'var(--green-brd)',
+    'Neutral':           'var(--amber-brd)',
+    'Cautiously Bearish':'var(--red-brd)',
+    'Bearish':           'var(--red-brd)',
+  }[sm.verdict] || 'var(--amber-brd)';
 
-  // ── INSIGHT CARDS ──
-  const insights = ai.insights || [];
-  document.getElementById('shReasons').innerHTML = `
-    ${sm.keyStrength || sm.keyRisk ? `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
-      ${sm.keyStrength ? `<div style="background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm);padding:10px 12px">
-        <div style="font-size:11px;font-weight:700;color:var(--green-d);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">✅ Key Strength</div>
-        <div style="font-size:13px;color:var(--t1);line-height:1.65">${sm.keyStrength}</div>
-      </div>` : ''}
-      ${sm.keyRisk ? `<div style="background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm);padding:10px 12px">
-        <div style="font-size:11px;font-weight:700;color:var(--red);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">⚠️ Key Risk</div>
-        <div style="font-size:13px;color:var(--t1);line-height:1.65">${sm.keyRisk}</div>
-      </div>` : ''}
-    </div>` : ''}
-    ${sm.institutionalSignal ? `
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--navy)">
-      <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:4px">🏦 Institutional Signal</div>
-      <div style="font-size:13px;color:var(--t1);line-height:1.72">${sm.institutionalSignal}</div>
-    </div>` : ''}
-    ${sm.marketContext ? `
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--blue,#3D8EFF)">
-      <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:4px">🌐 Market Context</div>
-      <div style="font-size:13px;color:var(--t1);line-height:1.72">${sm.marketContext}</div>
-    </div>` : ''}
-    ${insights.map(c=>`
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--navy)">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-        <span style="font-size:14px">${c.icon||'📊'}</span>
-        <span style="font-size:13px;font-weight:700;color:var(--tx)">${c.title}</span>
-        <span style="margin-left:auto;font-size:8px;color:var(--t3);font-family:var(--mono);background:var(--card);padding:1px 6px;border-radius:8px;border:1px solid var(--border)">GPT-4o</span>
+  document.getElementById('shAISummary').innerHTML = `
+
+    <!-- HEADER CARD -->
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:18px;margin-bottom:10px;box-shadow:var(--shadow)">
+
+      <!-- Title -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.07em;text-transform:uppercase;font-family:var(--mono);margin-bottom:3px">AI Intelligence Summary</div>
+          <div style="font-size:10px;color:var(--t3);font-family:var(--mono)">GPT-4o · ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+        </div>
+        <div style="background:${verdictBg};border:1.5px solid ${verdictBrd};border-radius:20px;padding:6px 14px;font-size:13px;font-weight:800;color:${verdictColor}">${sm.verdict||'Analyzing...'}</div>
       </div>
-      <div style="font-size:13px;color:var(--t1);line-height:1.72">${c.body}</div>
-    </div>`).join('')}`;
+
+      <!-- Confidence bar -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin-bottom:5px">
+          <span style="color:var(--t2)">Confidence</span>
+          <span style="font-weight:700;color:${confCol}">${conf}%</span>
+        </div>
+        <div style="height:6px;background:var(--card2);border-radius:3px;overflow:hidden;border:1px solid var(--border)">
+          <div style="height:100%;width:${conf}%;background:${confCol};border-radius:3px;transition:width .6s"></div>
+        </div>
+      </div>
+
+      <!-- Verdict reason -->
+      ${sm.verdictReason ? `<div style="font-size:14px;font-weight:600;color:var(--tx);line-height:1.6;padding:12px 14px;background:var(--card2);border-radius:var(--r-sm);border-left:4px solid ${verdictColor}">${sm.verdictReason}</div>` : ''}
+    </div>
+
+    <!-- TODAY'S OUTLOOK -->
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:18px;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.07em;text-transform:uppercase;font-family:var(--mono);margin-bottom:10px">📅 Today's Outlook</div>
+      <div style="font-size:14px;color:var(--t1);line-height:1.75">${sm.todayOutlook||'Generating outlook...'}</div>
+    </div>
+
+    <!-- THIS WEEK'S OUTLOOK -->
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:18px;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.07em;text-transform:uppercase;font-family:var(--mono);margin-bottom:10px">📆 This Week's Outlook</div>
+      <div style="font-size:14px;color:var(--t1);line-height:1.75">${sm.weekOutlook||'Generating outlook...'}</div>
+    </div>
+
+    <!-- KEY DRIVERS -->
+    ${drivers.length ? `
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="padding:13px 16px 10px;border-bottom:1px solid var(--border);background:var(--green-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--green-d);letter-spacing:.05em;text-transform:uppercase">📈 Key Drivers</div>
+      </div>
+      ${drivers.map(d=>`
+        <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--t1);line-height:1.6">
+          <span style="color:var(--green-d);font-weight:700;flex-shrink:0;margin-top:1px">•</span>
+          <span>${d}</span>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <!-- KEY RISKS -->
+    ${risks.length ? `
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="padding:13px 16px 10px;border-bottom:1px solid var(--border);background:var(--red-bg)">
+        <div style="font-size:12px;font-weight:700;color:var(--red);letter-spacing:.05em;text-transform:uppercase">⚠️ Key Risks</div>
+      </div>
+      ${risks.map(r=>`
+        <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--t1);line-height:1.6">
+          <span style="color:var(--red);font-weight:700;flex-shrink:0;margin-top:1px">•</span>
+          <span>${r}</span>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <!-- PRICE SCENARIOS -->
+    ${ps.bull||ps.neutral||ps.bear ? `
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.07em;text-transform:uppercase;font-family:var(--mono);margin-bottom:13px">💡 Potential Price Scenarios</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${ps.bull ? `
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm)">
+          <div style="flex-shrink:0;text-align:center;min-width:64px">
+            <div style="font-size:10px;font-weight:700;color:var(--green-d);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bullish</div>
+            <div style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--green-d)">$${parseFloat(ps.bull.target).toFixed(2)}</div>
+          </div>
+          <div style="font-size:13px;color:var(--t1);line-height:1.6;padding-top:2px">${ps.bull.description||''}</div>
+        </div>` : ''}
+        ${ps.neutral ? `
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:#EEF2FF;border:1px solid rgba(27,45,91,.15);border-radius:var(--r-sm)">
+          <div style="flex-shrink:0;text-align:center;min-width:64px">
+            <div style="font-size:10px;font-weight:700;color:var(--navy);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Neutral</div>
+            <div style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--navy)">$${parseFloat(ps.neutral.target).toFixed(2)}</div>
+          </div>
+          <div style="font-size:13px;color:var(--t1);line-height:1.6;padding-top:2px">${ps.neutral.description||''}</div>
+        </div>` : ''}
+        ${ps.bear ? `
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm)">
+          <div style="flex-shrink:0;text-align:center;min-width:64px">
+            <div style="font-size:10px;font-weight:700;color:var(--red);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bearish</div>
+            <div style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--red)">$${parseFloat(ps.bear.target).toFixed(2)}</div>
+          </div>
+          <div style="font-size:13px;color:var(--t1);line-height:1.6;padding-top:2px">${ps.bear.description||''}</div>
+        </div>` : ''}
+      </div>
+    </div>` : ''}
+
+    <!-- KEY LEVELS -->
+    ${kl.support||kl.resistance ? `
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.07em;text-transform:uppercase;font-family:var(--mono);margin-bottom:12px">📐 Key Price Levels</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${kl.support ? `
+        <div style="background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm);padding:13px 12px;text-align:center">
+          <div style="font-size:10px;font-weight:700;color:var(--green-d);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">🛡 Support</div>
+          <div style="font-family:var(--mono);font-size:19px;font-weight:700;color:var(--green-d)">$${parseFloat(kl.support).toFixed(2)}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:4px">${kl.supportLabel||'Key support'}</div>
+        </div>` : ''}
+        ${kl.resistance ? `
+        <div style="background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm);padding:13px 12px;text-align:center">
+          <div style="font-size:10px;font-weight:700;color:var(--red);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">🚧 Resistance</div>
+          <div style="font-family:var(--mono);font-size:19px;font-weight:700;color:var(--red)">$${parseFloat(kl.resistance).toFixed(2)}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:4px">${kl.resistanceLabel||'Key resistance'}</div>
+        </div>` : ''}
+      </div>
+    </div>` : ''}
+
+  `;
 
   // ── KEY STATS ──
   const bbPct = bbU!==bbL ? Math.round((px-bbL)/(bbU-bbL)*100) : 50;
-  const pl = ai.priceLevels || {};
   document.getElementById('shStats').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">Signal</div>
-      <div class="stat-val ${recType==='buy'?'g':recType==='sell'?'r':'a'}">${recType==='buy'?'BUY':recType==='sell'?'SELL':'HOLD'}</div>
+      <div class="stat-val ${recType==='buy'?'g':recType==='sell'?'r':'a'}">${recType.toUpperCase()}</div>
       <div class="stat-sub">${conf}% confidence</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Momentum</div>
-      <div class="stat-val ${rsi>70?'r':rsi<35?'g':'a'}">${rsi>70?'Hot🔥':rsi<35?'Oversold':'Neutral'}</div>
+      <div class="stat-val ${rsi>70?'r':rsi<35?'g':'a'}">${rsi>70?'Hot':rsi<35?'Oversold':'Neutral'}</div>
       <div class="stat-sub">RSI ${rsi.toFixed(0)}</div>
     </div>
     <div class="stat-card">
@@ -1754,16 +1848,16 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
     </div>
     <div class="stat-card">
       <div class="stat-label">Support</div>
-      <div class="stat-val n">$${pl.keySupport1||s1.toFixed(0)}</div>
-      <div class="stat-sub">${pl.keySupport1Label||'Key floor'}</div>
+      <div class="stat-val n">$${kl.support?parseFloat(kl.support).toFixed(0):s1.toFixed(0)}</div>
+      <div class="stat-sub">${kl.supportLabel||'Key floor'}</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Resistance</div>
-      <div class="stat-val n">$${pl.keyResistance1||r1.toFixed(0)}</div>
-      <div class="stat-sub">${pl.keyResistance1Label||'Next target'}</div>
+      <div class="stat-val n">$${kl.resistance?parseFloat(kl.resistance).toFixed(0):r1.toFixed(0)}</div>
+      <div class="stat-sub">${kl.resistanceLabel||'Next level'}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Activity</div>
+      <div class="stat-label">Flow</div>
       <div class="stat-val ${rvol>1.3?'g':rvol&&rvol<0.6?'r':'a'}">${rvol?rvol.toFixed(1)+'×':'—'}</div>
       <div class="stat-sub">Rel. volume</div>
     </div>`;
@@ -1828,7 +1922,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   : `<div style="font-size:12px;color:var(--t1);line-height:1.65">${ai.analystNote||'No analyst data available.'}</div>`;
 
   // ── TODAY OUTLOOK ──
-  const tod = ai.todayOutlook || {};
+  const tod = ai.todayOutlookFull || ai.todayOutlook || {};
   const todDir   = (tod.direction||'NEUTRAL');
   const todCss   = todDir==='UP'?'up':todDir==='DOWN'?'dn':'neut';
   const todLabel = tod.directionLabel || (todCss==='up'?'↑ Bullish Today':todCss==='dn'?'↓ Bearish Today':'→ Neutral Today');
@@ -1886,7 +1980,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
     </div>`;
 
   // ── WEEK OUTLOOK ──
-  const wk = ai.weekOutlook || {};
+  const wk = ai.weekOutlookFull || ai.weekOutlook || {};
   const wkDir   = (wk.direction||'NEUTRAL');
   const wkCss   = wkDir==='UP'?'up':wkDir==='DOWN'?'dn':'neut';
   const wkLabel = wk.directionLabel || (wkCss==='up'?'↑ Bullish Week':wkCss==='dn'?'↓ Bearish Week':'→ Consolidating');
@@ -2128,16 +2222,21 @@ function renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol,
   recEl.className   = `sh-rec-big ${recType}`;
   document.getElementById('shConfPct').textContent = 'Technical signals only';
 
-  const errBox = `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);
-    padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--amber);line-height:1.6">
-    ⚠️ GPT-4o analysis unavailable — showing technical signals only.<br>
-    Check that OPENAI_API_KEY is set in Render environment.
+  const errBox = `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--amber);line-height:1.6">
+    ⚠️ GPT-4o analysis unavailable — showing technical signals only. Check OPENAI_API_KEY in Render environment.
   </div>`;
-  document.getElementById('shVerdict').innerHTML = errBox +
-    `${sym} is showing <strong>${recType === 'buy' ? 'bullish' : recType === 'sell' ? 'bearish' : 'mixed'} technical signals</strong>.
-    Price is ${a50?'above':'below'} the 50-day SMA and ${a200?'above':'below'} the 200-day SMA.
-    RSI at ${rsi.toFixed(0)} is ${rsi>70?'overbought':rsi<35?'oversold':'neutral'}.`;
-  document.getElementById('shReasons').innerHTML = '';
+  document.getElementById('shAISummary').innerHTML = errBox + `
+    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.07em;text-transform:uppercase;font-family:var(--mono);margin-bottom:8px">AI Intelligence Summary</div>
+      <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:8px">
+        ${recType === 'buy' ? '↑ Bullish' : recType === 'sell' ? '↓ Bearish' : '→ Neutral'} — Technical signals only
+      </div>
+      <div style="font-size:13px;color:var(--t1);line-height:1.7">
+        ${sym} is showing <strong>${recType === 'buy' ? 'bullish' : recType === 'sell' ? 'bearish' : 'mixed'} technical signals</strong>.
+        Price is ${a50?'above':'below'} the 50-day average and ${a200?'above':'below'} the 200-day average.
+        RSI at ${rsi.toFixed(0)} is ${rsi>70?'overbought — momentum may be stretched':rsi<35?'oversold — a bounce is possible':'neutral — balanced buying and selling pressure'}.
+      </div>
+    </div>`;
 }
 
 function navTap(el) {
