@@ -310,10 +310,9 @@ app.get('/api/analyst/:symbol', async (req, res) => {
 });
 
 // ── OPENAI AI ANALYSIS ────────────────────────────────────────────────────────
-// Receives live market data from frontend, sends to GPT-4o, returns structured analysis
 app.post('/api/analyze', async (req, res) => {
   if (!OPENAI_KEY) {
-    return res.status(503).json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY in Render environment.' });
+    return res.status(503).json({ error: 'OpenAI API key not configured.' });
   }
 
   const {
@@ -321,113 +320,235 @@ app.post('/api/analyze', async (req, res) => {
     high, low, volume, vwap, avgVolume,
     rsi, macd, sma20, sma50, sma200, bbUpper, bbLower,
     atr, rvol, marketOpen,
-    recentBars, // last 5 closing prices for context
-    marketChangePct, // SPY day change for market context
-    recentNews, // headlines from Alpaca news
+    recentBars,
+    marketChangePct,
+    recentNews,
   } = req.body;
 
-  // Build a comprehensive data prompt for GPT-4o
+  // ── DERIVED SIGNALS (computed server-side for GPT context) ──
+  const aboveVwap  = price > vwap;
+  const aboveSma50 = price > sma50;
+  const aboveSma200= price > sma200;
+  const rrOverbought  = rsi > 70;
+  const rsiOversold   = rsi < 30;
+  const macdBullish   = macd > 0;
+  const bbPosition    = bbUpper !== bbLower ? ((price - bbLower) / (bbUpper - bbLower) * 100).toFixed(0) : 50;
+  const rvolLabel     = rvol > 2.0 ? 'VERY HIGH — major institutional activity' :
+                        rvol > 1.5 ? 'ABOVE AVERAGE — elevated institutional interest' :
+                        rvol > 1.0 ? 'NORMAL — typical session' :
+                        rvol > 0.5 ? 'BELOW AVERAGE — quiet session' : 'VERY LOW — minimal participation';
+  const trendStrength = (aboveSma50 ? 1 : 0) + (aboveSma200 ? 1 : 0) + (macdBullish ? 1 : 0) + (aboveVwap ? 1 : 0);
+  const trendLabel    = trendStrength >= 4 ? 'STRONG UPTREND' : trendStrength === 3 ? 'MODERATE UPTREND' :
+                        trendStrength === 2 ? 'MIXED/TRANSITIONAL' : trendStrength === 1 ? 'MODERATE DOWNTREND' : 'STRONG DOWNTREND';
+  const priceVsSma50Pct  = sma50  ? ((price - sma50)  / sma50  * 100).toFixed(1) : null;
+  const priceVsSma200Pct = sma200 ? ((price - sma200) / sma200 * 100).toFixed(1) : null;
+
+  // 5-session momentum
+  let momentum5d = null;
+  if (recentBars?.length >= 2) {
+    const oldest = recentBars[0]?.c;
+    const newest = recentBars[recentBars.length - 1]?.c;
+    if (oldest && newest) momentum5d = ((newest - oldest) / oldest * 100).toFixed(2);
+  }
+
   const dataContext = `
-STOCK: ${symbol} (${companyName})
-DATE: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-MARKET STATUS: ${marketOpen ? 'OPEN' : 'CLOSED'}
+╔══════════════════════════════════════════════════════════════╗
+  GFINHUB AI ANALYSIS REQUEST
+  ${new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' })}
+  Market: ${marketOpen ? 'OPEN' : 'CLOSED'}
+╚══════════════════════════════════════════════════════════════╝
 
-LIVE PRICE DATA (from Alpaca Markets):
-- Current Price: $${price}
-- Previous Close: $${prevClose}
-- Day Change: ${change >= 0 ? '+' : ''}$${change?.toFixed(2)} (${changePct >= 0 ? '+' : ''}${changePct?.toFixed(2)}%)
-- Day High: $${high} | Day Low: $${low}
-- Volume: ${volume?.toLocaleString()} shares
-- VWAP: $${vwap}
-- Relative Volume (vs average): ${rvol?.toFixed(2)}x
+COMPANY: ${companyName} (${symbol})
 
-TECHNICAL INDICATORS (calculated from live bar data):
-- RSI (14-period): ${rsi?.toFixed(1)} ${rsi > 70 ? '[OVERBOUGHT]' : rsi < 30 ? '[OVERSOLD]' : '[NEUTRAL]'}
-- MACD: ${macd >= 0 ? '+' : ''}${macd?.toFixed(3)} ${macd > 0 ? '[BULLISH]' : '[BEARISH]'}
-- Price vs VWAP: ${price > vwap ? 'ABOVE [BULLISH]' : 'BELOW [BEARISH]'}
-- Price vs 20-day SMA ($${sma20?.toFixed(2)}): ${price > sma20 ? 'ABOVE' : 'BELOW'}
-- Price vs 50-day SMA ($${sma50?.toFixed(2)}): ${price > sma50 ? 'ABOVE' : 'BELOW'}
-- Price vs 200-day SMA ($${sma200?.toFixed(2)}): ${price > sma200 ? 'ABOVE' : 'BELOW'}
-- Bollinger Upper: $${bbUpper?.toFixed(2)} | Lower: $${bbLower?.toFixed(2)}
-- ATR (daily range): $${atr?.toFixed(2)} (${((atr/price)*100)?.toFixed(1)}% of price)
+━━━ LIVE PRICE DATA (Alpaca Markets) ━━━
+Current Price:    $${price}
+Previous Close:   $${prevClose}
+Day Change:       ${change >= 0 ? '+' : ''}$${Number(change).toFixed(2)} (${changePct >= 0 ? '+' : ''}${Number(changePct).toFixed(2)}%)
+Day Range:        $${low} — $${high}  (ATR: $${Number(atr).toFixed(2)}, ${((atr/price)*100).toFixed(1)}% of price)
+Volume:           ${Number(volume).toLocaleString()} shares  [RVOL: ${Number(rvol).toFixed(2)}x = ${rvolLabel}]
+VWAP:             $${vwap}  [Price is ${aboveVwap ? 'ABOVE ↑' : 'BELOW ↓'} VWAP]
 
-RECENT PRICE HISTORY (last 5 sessions):
-${recentBars?.map((b, i) => `  Session -${recentBars.length - i}: Close $${b.c?.toFixed(2)}, Volume ${b.v?.toLocaleString()}`).join('\n') || 'Not available'}
+━━━ TECHNICAL INDICATORS (computed from 220 days of real bar data) ━━━
+RSI (14):         ${Number(rsi).toFixed(1)} → ${rrOverbought ? '⚠ OVERBOUGHT — buying exhaustion risk' : rsiOversold ? '✓ OVERSOLD — potential bounce zone' : 'NEUTRAL — balanced momentum'}
+MACD:             ${macd >= 0 ? '+' : ''}${Number(macd).toFixed(4)} → ${macdBullish ? 'BULLISH (above signal line)' : 'BEARISH (below signal line)'}
+SMA 20:           $${Number(sma20).toFixed(2)}  [Price ${price > sma20 ? 'above ↑' : 'below ↓'}]
+SMA 50:           $${Number(sma50).toFixed(2)}  [Price ${aboveSma50 ? 'above ↑' : 'below ↓'} by ${Math.abs(priceVsSma50Pct)}%]
+SMA 200:          $${Number(sma200).toFixed(2)} [Price ${aboveSma200 ? 'above ↑' : 'below ↓'} by ${Math.abs(priceVsSma200Pct)}%]
+Bollinger Upper:  $${Number(bbUpper).toFixed(2)}
+Bollinger Lower:  $${Number(bbLower).toFixed(2)}
+BB Position:      ${bbPosition}% of band [${bbPosition > 80 ? 'Near upper — extended' : bbPosition < 20 ? 'Near lower — oversold' : 'Middle zone — neutral'}]
+Overall Trend:    ${trendLabel} (${trendStrength}/4 bullish signals)
 
-BROADER MARKET CONTEXT:
-- S&P 500 (SPY) today: ${marketChangePct >= 0 ? '+' : ''}${marketChangePct?.toFixed(2)}%
+━━━ RECENT PRICE HISTORY (last ${recentBars?.length || 0} sessions) ━━━
+${recentBars?.map((b, i) => `  Day -${recentBars.length - i}: Close $${Number(b.c).toFixed(2)}, Vol ${Number(b.v).toLocaleString()}`).join('\n') || '  Not available'}
+5-Day Momentum:   ${momentum5d !== null ? (momentum5d >= 0 ? '+' : '') + momentum5d + '%' : 'N/A'}
 
-RECENT NEWS HEADLINES (from Alpaca News API):
-${recentNews?.length ? recentNews.slice(0, 5).map(n => `  - ${n.headline} [${n.source}]`).join('\n') : '  No recent news available'}
+━━━ BROADER MARKET CONTEXT ━━━
+S&P 500 today:    ${marketChangePct >= 0 ? '+' : ''}${Number(marketChangePct).toFixed(2)}%
+${symbol} vs Market: ${changePct > marketChangePct ? `Outperforming by ${(changePct - marketChangePct).toFixed(2)}% (bullish relative strength)` : `Underperforming by ${(marketChangePct - changePct).toFixed(2)}% (relative weakness)`}
+
+━━━ LATEST NEWS (Alpaca News API) ━━━
+${recentNews?.length ? recentNews.slice(0, 5).map(n => `  • ${n.headline} [${n.source}]`).join('\n') : '  No recent news available'}
 `;
 
-  const systemPrompt = `You are GFinHub AI, a professional financial market analyst embedded in the GFinHub stock analysis platform. You analyze live market data and produce clear, structured, professional analysis for investors.
+  const systemPrompt = `You are the Senior Portfolio Analyst at GFinHub, a professional financial intelligence platform. You have 20 years of experience at Goldman Sachs, JPMorgan, and leading hedge funds. You analyze stocks for both institutional and retail investors with the highest standards of professional rigor.
 
-Your analysis must be:
-- Based STRICTLY on the live data provided — do not invent numbers
-- Written in plain English that any investor can understand
-- Honest about uncertainty — if signals are mixed, say so
-- Professional but not overly technical — explain what indicators MEAN not just their values
-- Forward-looking — what does this data suggest about near-term price action
+YOUR ROLE:
+You receive live market data for a stock and produce a comprehensive, professional analysis that a serious investor — from a first-time retail investor to an experienced trader — can act on with confidence. Your analysis must be honest, precise, and genuinely useful. Never produce generic filler content.
 
-CRITICAL: You must respond with ONLY valid JSON. No markdown, no code blocks, no extra text. Start with { and end with }.
+CRITICAL RULES:
+1. Use ONLY the data provided. Never fabricate numbers, news, or events you cannot verify from the data given.
+2. Every claim must reference specific numbers from the data (prices, percentages, levels).
+3. Be direct. If the stock is in trouble, say so clearly. If it is strong, explain exactly why.
+4. Write as a trusted financial professional, not as a chatbot. No hedging every sentence with "please consult a financial advisor." One disclaimer at the end is enough.
+5. Explain financial concepts in plain English — assume the user understands money but not technical jargon.
+6. Be honest about uncertainty. Acknowledge when signals are mixed or the picture is unclear.
+7. Minimum content: each narrative must be substantive — at least 3-4 sentences with specific numbers and reasoning.
+8. CRITICAL: Respond with ONLY valid JSON. No markdown, no code blocks, no explanatory text before or after. Start directly with { and end with }.
 
-Respond with this exact JSON structure:
+JSON STRUCTURE — populate every field with high-quality, specific content:
+
 {
   "recommendation": "BUY" | "HOLD" | "SELL",
-  "confidence": <number 1-100>,
-  "verdictHeadline": "<one powerful sentence summarizing the call>",
-  "verdictBody": "<2-3 sentences explaining the recommendation with specific price levels and reasons>",
+  "confidence": <integer 1-100>,
+
+  "summary": {
+    "headline": "<A single powerful, specific sentence that captures the most important thing about this stock right now. Reference the actual price and a specific reason. Example: 'NVDA is holding above its 200-day average at $211 despite a 6.5% pullback — the technical structure remains intact for long-term holders.'>",
+    "overallVerdict": "<3-4 sentences. This is the opening paragraph of a professional research note. State the recommendation clearly, explain the dominant reason with specific numbers, acknowledge the key risk, and give the reader a clear picture of what this stock is doing and why. This must be substantive and specific — not generic.>",
+    "whatIsHappening": "<2-3 sentences explaining in plain English what is going on with this stock right now — today's move, why it is happening (reference news if available), and what it means for investors. Someone with no financial background should understand this completely.>",
+    "keyStrength": "<The single most compelling bullish argument with specific supporting data from the numbers provided.>",
+    "keyRisk": "<The single most important risk or concern with specific supporting data. Be honest — do not downplay real risks.>",
+    "institutionalSignal": "<2-3 sentences interpreting the VWAP position and RVOL together. Explain what institutional investors are doing right now — are large funds accumulating, distributing, or sitting on the sidelines? Be specific about what the volume data tells us.>",
+    "marketContext": "<2 sentences explaining how this stock is performing relative to the broader market today and what that means. Is it showing relative strength or weakness? Why does that matter?>"
+  },
+
   "insights": [
     {
-      "icon": "<emoji>",
-      "title": "<insight category>",
-      "body": "<2-3 sentences of genuine insight based on the data>"
+      "icon": "🏦",
+      "title": "Institutional Money Flow",
+      "body": "<3-4 sentences. Explain precisely what the VWAP and RVOL data reveals about institutional activity. Are large funds buying, selling, or neutral? What is the conviction level? What does this mean for retail investors watching the stock?>"
+    },
+    {
+      "icon": "📊",
+      "title": "Price Trend & Structure",
+      "body": "<3-4 sentences. Explain the trend using the three SMAs. Where is price relative to each? What does this structure tell a long-term investor versus a short-term trader? Name the specific dollar levels that matter.>"
+    },
+    {
+      "icon": "⚡",
+      "title": "Momentum & Timing",
+      "body": "<3-4 sentences. Interpret RSI, MACD, and the 5-day momentum together. Is momentum building or fading? Is this a good time to enter, or should an investor wait? Be specific about what would need to change for the picture to improve or worsen.>"
+    },
+    {
+      "icon": "📰",
+      "title": "News & Catalysts",
+      "body": "<3-4 sentences. Reference the actual news headlines provided. What is the market reacting to? Is this move news-driven or purely technical? What upcoming events could change the picture? If no relevant news, explain the move from a purely technical perspective.>"
     }
   ],
+
   "todayOutlook": {
     "direction": "UP" | "DOWN" | "NEUTRAL",
-    "expectedHigh": <number>,
-    "expectedLow": <number>,
-    "narrative": "<3-4 sentences about today specifically — what is driving the move, what levels matter today, what to watch>",
+    "directionLabel": "<Short label e.g. 'Cautiously Bullish' | 'Under Pressure' | 'Range-Bound' | 'Strong Momentum' | 'Selling Off'>",
+    "expectedHigh": <specific number based on VWAP, resistance levels, and ATR>,
+    "expectedLow": <specific number based on VWAP, support levels, and ATR>,
+    "keyLevelToWatch": <the single most important price level today>,
+    "keyLevelReason": "<Why this level matters today — support, resistance, VWAP, etc.>",
+    "narrative": "<4-5 sentences giving a complete picture of today's session. Cover: what is driving the move today, whether the market is open or closed, the key levels that matter in today's session, what bulls need to see and what bears need to see, and what the most likely scenario is for the rest of today. Reference the news if relevant. Be specific with dollar levels throughout.>",
     "facts": [
-      { "icon": "<emoji>", "title": "<label>", "body": "<specific fact with numbers>" }
+      { "icon": "💰", "title": "VWAP Position", "body": "<Specific sentence about VWAP at $X and what it means for today's session>" },
+      { "icon": "📈", "title": "Momentum Reading", "body": "<Specific sentence about RSI at X.X and what it implies for today>" },
+      { "icon": "📦", "title": "Volume Activity", "body": "<Specific sentence about today's volume vs average and what it signals>" },
+      { "icon": "🎯", "title": "Critical Level", "body": "<The most important price level today and exactly what happens if it breaks>" }
     ]
   },
+
   "weekOutlook": {
     "direction": "UP" | "DOWN" | "NEUTRAL",
-    "expectedHigh": <number>,
-    "expectedLow": <number>,
-    "baseCase": <number>,
-    "narrative": "<3-4 sentences about this week — trend, key levels, what needs to happen for bull vs bear case>",
+    "directionLabel": "<Short weekly bias label e.g. 'Bullish with Caution' | 'Bearish Trend' | 'Consolidating' | 'Breakout Potential'>",
+    "expectedHigh": <realistic weekly high based on resistance and ATR>,
+    "expectedLow": <realistic weekly low based on support and ATR>,
+    "baseCase": <most likely closing price by end of week>,
+    "bullCase": <what happens if bulls take control — specific price>,
+    "bearCase": <what happens if bears take control — specific price>,
+    "narrative": "<5-6 sentences giving a thorough weekly outlook. Cover: the overall weekly bias and why, the key support and resistance levels for the week, what the 50-day and 200-day SMAs mean for this week's price action, what catalyst or event could change the weekly direction, and what an investor should be watching every day this week. Dollar levels throughout.>",
     "facts": [
-      { "icon": "<emoji>", "title": "<label>", "body": "<specific fact with numbers>" }
+      { "icon": "🏛️", "title": "Trend Structure", "body": "<How the SMA alignment sets up the week — specific levels>" },
+      { "icon": "🎯", "title": "Key Support", "body": "<The most important support level this week and why it holds or breaks>" },
+      { "icon": "🚧", "title": "Key Resistance", "body": "<The resistance level bulls need to clear this week to confirm momentum>" },
+      { "icon": "⚡", "title": "Momentum Setup", "body": "<RSI/MACD entering the week — what this means for the week's direction>" },
+      { "icon": "⚠️", "title": "Risk to Watch", "body": "<The specific event or level that would change the weekly outlook entirely>" }
     ]
   },
+
   "priceLevels": {
-    "keySupport": <number>,
-    "keyResistance": <number>,
-    "stopLoss": <number>
+    "keySupport1": <number>,
+    "keySupport1Label": "<Where this support comes from — e.g. '200-day SMA' or 'Bollinger Lower Band'>",
+    "keySupport2": <number>,
+    "keySupport2Label": "<Source of this support level>",
+    "keyResistance1": <number>,
+    "keyResistance1Label": "<Where this resistance comes from>",
+    "keyResistance2": <number>,
+    "keyResistance2Label": "<Source of this resistance>",
+    "stopLossRef": <number — where a prudent stop-loss would sit based on ATR>,
+    "stopLossNote": "<Brief explanation of why this stop level makes sense>"
   },
+
   "threeMonthTargets": {
-    "bull": <number>,
-    "base": <number>,
-    "bear": <number>,
-    "bullReasoning": "<one sentence>",
-    "baseReasoning": "<one sentence>",
-    "bearReasoning": "<one sentence>"
+    "bull": <specific number>,
+    "base": <specific number>,
+    "bear": <specific number>,
+    "bullReasoning": "<2 sentences: specific conditions needed for the bull case — what needs to go right>",
+    "baseReasoning": "<2 sentences: what the base case assumes about the stock and market>",
+    "bearReasoning": "<2 sentences: specific conditions that produce the bear case — what risks materialise>",
+    "probabilityBull": <integer 0-100 — your estimated probability of the bull case>,
+    "probabilityBase": <integer 0-100 — your estimated probability of the base case>,
+    "probabilityBear": <integer 0-100 — your estimated probability of the bear case>
   },
+
   "catalysts": {
-    "bull": ["<specific bullish catalyst 1>", "<specific bullish catalyst 2>", "<specific bullish catalyst 3>", "<specific bullish catalyst 4>"],
-    "bear": ["<specific risk factor 1>", "<specific risk factor 2>", "<specific risk factor 3>", "<specific risk factor 4>"]
+    "bull": [
+      "<Specific bullish catalyst 1 — tied to the data or news provided>",
+      "<Specific bullish catalyst 2>",
+      "<Specific bullish catalyst 3>",
+      "<Specific bullish catalyst 4>"
+    ],
+    "bear": [
+      "<Specific risk 1 — tied to the data or news provided>",
+      "<Specific risk 2>",
+      "<Specific risk 3>",
+      "<Specific risk 4>"
+    ]
   },
+
   "indicators": {
-    "trendInsight": "<2-3 sentences explaining what the MA alignment means for this specific stock right now>",
-    "momentumInsight": "<2-3 sentences explaining RSI and MACD in plain English — what it means for near-term price action>",
-    "volumeInsight": "<2-3 sentences explaining volume and VWAP — who is buying/selling and with what conviction>",
-    "volatilityInsight": "<2-3 sentences explaining ATR and Bollinger Bands — expected range and what it means for risk>"
+    "trendPanel": {
+      "title": "Price Trend — Where Is This Stock Heading?",
+      "reading": "BULLISH" | "BEARISH" | "MIXED",
+      "explanation": "<4-5 sentences. Explain the SMA structure in plain English — what does it mean that price is above or below each moving average. Use an analogy if helpful. Explain why the 50-day and 200-day averages are the most watched levels by professional investors and fund managers. State specifically what the current alignment means for someone holding this stock for weeks versus months.>",
+      "whatToWatch": "<The specific price level to watch that would change the trend reading — e.g. 'A daily close above $217 would confirm the 50-day SMA reclaim and shift the short-term outlook bullish.'>"
+    },
+    "momentumPanel": {
+      "title": "Momentum — Is Buying or Selling Pressure Building?",
+      "reading": "STRONG" | "MODERATE" | "WEAK" | "EXHAUSTED" | "RECOVERING",
+      "explanation": "<4-5 sentences. Explain what RSI means without using the term 'overbought' — say what it actually means for the investor. Explain what MACD is telling us in terms a non-trader understands. Connect the momentum reading to the current price move and say what to expect next based on historical behaviour at this momentum level.>",
+      "whatToWatch": "<The specific momentum signal that would change the reading — e.g. 'A MACD bullish crossover or RSI recovery above 50 would signal momentum is shifting back to buyers.'>"
+    },
+    "volumePanel": {
+      "title": "Volume & Institutional Activity — Who Is Really Moving This Stock?",
+      "reading": "ACCUMULATION" | "DISTRIBUTION" | "NEUTRAL" | "CLIMACTIC",
+      "explanation": "<4-5 sentences. Explain VWAP in plain English — what it is, why institutions use it, and what today's position above or below VWAP reveals about who is in control. Interpret RVOL — what does trading at Xx the average volume actually mean? Are large funds likely building positions, exiting, or absent? What should a retail investor do with this information?>",
+      "whatToWatch": "<The volume signal that would indicate a change in institutional behaviour.>"
+    },
+    "volatilityPanel": {
+      "title": "Volatility & Risk — How Much Can This Stock Move?",
+      "reading": "HIGH" | "NORMAL" | "LOW" | "COMPRESSING",
+      "explanation": "<4-5 sentences. Explain the Bollinger Bands in a way a normal person understands — use the analogy of a rubber band or trading channel. Explain where price sits in the band today and what that historically implies. Explain the ATR in dollars per day — e.g. 'This stock typically moves $X in a single session, meaning a position of 100 shares has a one-day risk of approximately $Y.' Give practical risk context.>",
+      "whatToWatch": "<What volatility signal to watch — e.g. 'A Bollinger Band squeeze followed by a volume breakout would signal the next large directional move is coming.'>"
+    }
   },
-  "analystNote": "<One honest paragraph about what Wall Street analysts broadly think about this stock type/sector, what drives institutional interest or concern, and what the key debate is among professional investors. Be specific to the company if you know it, general if not.>"
+
+  "analystNote": "<3-4 sentences that read like the closing paragraph of a Goldman Sachs research note. Summarise the overall picture clearly — what is the professional consensus, what is the key debate on Wall Street about this stock, what is the most important thing an investor needs to decide about this company right now, and what would make you change the recommendation. This should leave the reader with a clear, actionable perspective.>",
+
+  "disclaimer": "This analysis is generated by GFinHub AI using live market data. It is for informational purposes only and does not constitute financial advice. Past performance does not guarantee future results. Always conduct your own research before making investment decisions."
 }`;
 
   try {
@@ -438,13 +559,14 @@ Respond with this exact JSON structure:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model:       OPENAI_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user',   content: `Analyze this stock and return JSON only:\n${dataContext}` },
+          { role: 'user',   content: `You are the Senior Portfolio Analyst. Produce a complete, professional analysis. Return ONLY valid JSON with no other text:\n\n${dataContext}` },
         ],
-        temperature: 0.3, // lower = more consistent, factual responses
-        max_tokens: 2000,
+        temperature:  0.25, // precise, consistent, factual
+        max_tokens:   4000, // enough for rich, detailed content
+        response_format: { type: 'json_object' }, // forces valid JSON output
       }),
     });
 
@@ -457,18 +579,21 @@ Respond with this exact JSON structure:
 
     const raw = data.choices?.[0]?.message?.content || '';
 
-    // Parse JSON safely
     let analysis;
     try {
-      // Strip any accidental markdown fences
       const clean = raw.replace(/```json|```/g, '').trim();
       analysis = JSON.parse(clean);
     } catch (parseErr) {
-      console.error('JSON parse error:', parseErr.message, '\nRaw:', raw.slice(0, 200));
+      console.error('JSON parse error:', parseErr.message);
       return res.status(500).json({ error: 'Failed to parse AI response', raw: raw.slice(0, 500) });
     }
 
-    res.json({ analysis, model: OPENAI_MODEL, timestamp: new Date().toISOString() });
+    res.json({
+      analysis,
+      model:     OPENAI_MODEL,
+      timestamp: new Date().toISOString(),
+      dataPoints: Object.keys(req.body).length,
+    });
 
   } catch (e) {
     console.error('OpenAI fetch error:', e.message);

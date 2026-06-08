@@ -1676,46 +1676,99 @@ async function buildAnalysis(sym, snap, bars, analystData) {
   renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1, analystData);
 }
 
-// ── RENDER AI ANALYSIS ────────────────────────────────────────────────────────
+// ── RENDER AI ANALYSIS ──────────────────────────────────────────────────────
 function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1, fmp) {
-  const recType  = ai.recommendation?.toLowerCase() === 'buy' ? 'buy'
-    : ai.recommendation?.toLowerCase() === 'sell' ? 'sell' : 'hold';
+  const recType  = (ai.recommendation||'').toLowerCase() === 'buy' ? 'buy'
+    : (ai.recommendation||'').toLowerCase() === 'sell' ? 'sell' : 'hold';
   const recLabel = recType==='buy' ? '▲ BUY' : recType==='sell' ? '▼ SELL' : '⏸ HOLD';
   const conf     = Math.min(99, Math.max(1, ai.confidence || 50));
   const confCol  = recType==='buy'?'#2DC653':recType==='sell'?'#E53E3E':'#D97706';
 
-  // Hero
-  const recEl = document.getElementById('shRec');
-  recEl.textContent = recLabel;
-  recEl.className   = `sh-rec-big ${recType}`;
+  // ── UPDATE HERO ──
+  document.getElementById('shRec').textContent = recLabel;
+  document.getElementById('shRec').className   = `sh-rec-big ${recType}`;
   document.getElementById('shConfBar').style.width      = conf+'%';
   document.getElementById('shConfBar').style.background = confCol;
   document.getElementById('shConfPct').textContent      = conf+'% confidence · GPT-4o';
 
-  // Verdict
-  document.getElementById('shVerdict').innerHTML =
-    `<strong>${ai.verdictHeadline}</strong><br><br>${ai.verdictBody}`;
+  const sm = ai.summary || {};
 
-  // Insight cards
+  // ── SUMMARY VERDICT ──
+  document.getElementById('shVerdict').innerHTML =
+    `<strong>${sm.headline || ai.verdictHeadline || ''}</strong>
+    <br><br>${sm.overallVerdict || ai.verdictBody || ''}
+    ${sm.whatIsHappening ? `<br><br><span style="color:var(--t1)">${sm.whatIsHappening}</span>` : ''}`;
+
+  // ── INSIGHT CARDS ──
   const insights = ai.insights || [];
-  document.getElementById('shReasons').innerHTML = insights.map(c => {
-    const borderCol = c.title?.toLowerCase().includes('bull') || c.title?.toLowerCase().includes('buy')
-      ? 'var(--green-d)'
-      : c.title?.toLowerCase().includes('risk') || c.title?.toLowerCase().includes('bear')
-      ? 'var(--red)' : 'var(--navy)';
-    return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
-      padding:11px 13px;margin-bottom:8px;border-left:3px solid ${borderCol}">
+  document.getElementById('shReasons').innerHTML = `
+    ${sm.keyStrength || sm.keyRisk ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">
+      ${sm.keyStrength ? `<div style="background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm);padding:10px 12px">
+        <div style="font-size:9px;font-weight:700;color:var(--green-d);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">✅ Key Strength</div>
+        <div style="font-size:11px;color:var(--t1);line-height:1.5">${sm.keyStrength}</div>
+      </div>` : ''}
+      ${sm.keyRisk ? `<div style="background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm);padding:10px 12px">
+        <div style="font-size:9px;font-weight:700;color:var(--red);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">⚠️ Key Risk</div>
+        <div style="font-size:11px;color:var(--t1);line-height:1.5">${sm.keyRisk}</div>
+      </div>` : ''}
+    </div>` : ''}
+    ${sm.institutionalSignal ? `
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--navy)">
+      <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:4px">🏦 Institutional Signal</div>
+      <div style="font-size:11px;color:var(--t1);line-height:1.65">${sm.institutionalSignal}</div>
+    </div>` : ''}
+    ${sm.marketContext ? `
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--blue,#3D8EFF)">
+      <div style="font-size:11px;font-weight:700;color:var(--tx);margin-bottom:4px">🌐 Market Context</div>
+      <div style="font-size:11px;color:var(--t1);line-height:1.65">${sm.marketContext}</div>
+    </div>` : ''}
+    ${insights.map(c=>`
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--navy)">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
         <span style="font-size:14px">${c.icon||'📊'}</span>
         <span style="font-size:11px;font-weight:700;color:var(--tx)">${c.title}</span>
-        <span style="margin-left:auto;font-size:9px;color:var(--t3);font-family:var(--mono);
-          background:var(--blue-bg,rgba(27,45,91,.06));padding:1px 6px;border-radius:8px">GPT-4o</span>
+        <span style="margin-left:auto;font-size:8px;color:var(--t3);font-family:var(--mono);background:var(--card);padding:1px 6px;border-radius:8px;border:1px solid var(--border)">GPT-4o</span>
       </div>
       <div style="font-size:11px;color:var(--t1);line-height:1.65">${c.body}</div>
-    </div>`;
-  }).join('');
+    </div>`).join('')}`;
 
-  // ── ANALYST CONSENSUS — 100% live from FMP API ──
+  // ── KEY STATS ──
+  const bbPct = bbU!==bbL ? Math.round((px-bbL)/(bbU-bbL)*100) : 50;
+  const pl = ai.priceLevels || {};
+  document.getElementById('shStats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Signal</div>
+      <div class="stat-val ${recType==='buy'?'g':recType==='sell'?'r':'a'}">${recType==='buy'?'BUY':recType==='sell'?'SELL':'HOLD'}</div>
+      <div class="stat-sub">${conf}% confidence</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Momentum</div>
+      <div class="stat-val ${rsi>70?'r':rsi<35?'g':'a'}">${rsi>70?'Hot🔥':rsi<35?'Oversold':'Neutral'}</div>
+      <div class="stat-sub">RSI ${rsi.toFixed(0)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Trend</div>
+      <div class="stat-val ${a50?'g':'r'}">${a50&&a200?'Strong':a200?'Intact':'Broken'}</div>
+      <div class="stat-sub">${a50?'Above':'Below'} SMA50</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Support</div>
+      <div class="stat-val n">$${pl.keySupport1||s1.toFixed(0)}</div>
+      <div class="stat-sub">${pl.keySupport1Label||'Key floor'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Resistance</div>
+      <div class="stat-val n">$${pl.keyResistance1||r1.toFixed(0)}</div>
+      <div class="stat-sub">${pl.keyResistance1Label||'Next target'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Activity</div>
+      <div class="stat-val ${rvol>1.3?'g':rvol&&rvol<0.6?'r':'a'}">${rvol?rvol.toFixed(1)+'×':'—'}</div>
+      <div class="stat-sub">Rel. volume</div>
+    </div>`;
+
+  // ── ANALYST CONSENSUS ──
   const anFallbackTarget = px ? Math.round(px*1.12) : 0;
   const anTotal   = fmp?.totalAnalysts || 0;
   const anBuy     = fmp?.totalBuy      || 0;
@@ -1730,26 +1783,20 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   const anPE      = fmp?.peRatio       || '—';
   const anSector  = fmp?.sector        || '—';
   const upsidePct = anTarget && px ? ((anTarget-px)/px*100) : null;
-  const upsideStr = upsidePct !== null
-    ? (upsidePct>=0?'+':'')+upsidePct.toFixed(1)+'% upside'
-    : '—';
+  const upsideStr = upsidePct !== null ? (upsidePct>=0?'+':'')+upsidePct.toFixed(1)+'% upside' : '—';
   const upsideCol = upsidePct>10?'var(--green-d)':upsidePct&&upsidePct>0?'var(--amber)':'var(--red)';
-
   const noFmp = !fmp || fmp.noKey || fmp.error;
 
   document.getElementById('shAnalyst').innerHTML = noFmp ? `
-    <div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);
-      padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--amber);line-height:1.6">
-      ⚠️ Live analyst data unavailable. Add <strong>FMP_API_KEY</strong> in Render environment for real-time analyst ratings, price targets, and earnings data from financialmodelingprep.com (free).
+    <div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--amber);line-height:1.6">
+      ⚠️ Live analyst data unavailable. Add <strong>FMP_API_KEY</strong> in Render environment for real-time analyst ratings and price targets.
     </div>
-    <div style="font-size:12px;color:var(--t1);line-height:1.65">${ai.analystNote || 'Analyst consensus not available for this ticker.'}</div>`
-
+    <div style="font-size:12px;color:var(--t1);line-height:1.65">${ai.analystNote||''}</div>`
   : anTotal > 0 ? `
-    <!-- Rating + target -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
       <div>
         <div style="font-size:18px;font-weight:800;color:var(--navy)">${anRating}</div>
-        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-top:2px">${anTotal} Wall Street analysts · FMP live</div>
+        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-top:2px">${anTotal} Wall Street analysts · Live from FMP</div>
       </div>
       <div style="text-align:right">
         <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green-d)">$${parseFloat(anTarget).toFixed(2)}</div>
@@ -1757,7 +1804,6 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         <div style="font-size:9px;color:var(--t3);font-family:var(--mono)">12-mo consensus target</div>
       </div>
     </div>
-    <!-- Buy/Hold/Sell bars -->
     <div style="display:flex;gap:6px;margin-bottom:12px">
       ${[['Buy',anBuy,'var(--green)','var(--green-d)'],['Hold',anHold,'var(--amber)','var(--amber)'],['Sell',anSell,'var(--red)','var(--red)']].map(([label,count,col,textCol])=>`
         <div style="flex:1;text-align:center">
@@ -1769,204 +1815,307 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         </div>`).join('')}
     </div>
     <div style="height:1px;background:var(--border);margin-bottom:10px"></div>
-    <!-- Key facts from FMP -->
-    ${[
-      ['Next earnings', anEarnDate+' · '+anEarnEPS],
-      ['P/E ratio', anPE],
-      ['Sector', anSector],
-      ['Target range', fmp?.targetLow&&fmp?.targetHigh ? '$'+parseFloat(fmp.targetLow).toFixed(0)+' – $'+parseFloat(fmp.targetHigh).toFixed(0) : '—'],
-    ].map(([label,val])=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
-        <span style="color:var(--t2);font-weight:600">${label}</span>
-        <span style="color:var(--tx);font-family:var(--mono);font-weight:600;text-align:right;max-width:60%">${val}</span>
+    ${[['Next earnings',anEarnDate+' · '+anEarnEPS],['P/E ratio',anPE],['Sector',anSector],
+       ['Target range',fmp?.targetLow&&fmp?.targetHigh?'$'+parseFloat(fmp.targetLow).toFixed(0)+' – $'+parseFloat(fmp.targetHigh).toFixed(0):'—']
+    ].map(([l,v])=>`
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span style="color:var(--t2);font-weight:600">${l}</span>
+        <span style="color:var(--tx);font-family:var(--mono);font-weight:600;max-width:60%;text-align:right">${v}</span>
       </div>`).join('')}
-    <!-- GPT-4o analyst note -->
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
-      padding:9px 11px;margin-top:10px;font-size:10px;color:var(--t2);line-height:1.6;font-style:italic">
-      📌 ${ai.analystNote || 'GPT-4o analyst note not available.'}
-    </div>` :
-
-  `<div style="font-size:12px;color:var(--t1);line-height:1.65">
-    <div style="font-size:11px;color:var(--t2);font-family:var(--mono);margin-bottom:8px">Source: Financial Modeling Prep API</div>
-    ${ai.analystNote || 'No analyst consensus data available for this ticker.'}
-  </div>`;
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;margin-top:10px;font-size:10px;color:var(--t2);line-height:1.65;font-style:italic">
+      📌 ${ai.analystNote||''}
+    </div>`
+  : `<div style="font-size:12px;color:var(--t1);line-height:1.65">${ai.analystNote||'No analyst data available.'}</div>`;
 
   // ── TODAY OUTLOOK ──
   const tod = ai.todayOutlook || {};
-  const todDir = (tod.direction||'NEUTRAL').toLowerCase().replace('up','up').replace('down','dn');
-  const todDirCss = todDir==='up'?'up':todDir==='down'||todDir==='dn'?'dn':'neut';
-  const todLabel = todDirCss==='up'?'↑ Bullish Today':todDirCss==='dn'?'↓ Bearish Today':'→ Neutral Today';
-  const todH = tod.expectedHigh || (px+atr*0.6);
-  const todL = tod.expectedLow  || (px-atr*0.6);
+  const todDir   = (tod.direction||'NEUTRAL');
+  const todCss   = todDir==='UP'?'up':todDir==='DOWN'?'dn':'neut';
+  const todLabel = tod.directionLabel || (todCss==='up'?'↑ Bullish Today':todCss==='dn'?'↓ Bearish Today':'→ Neutral Today');
+  const todH = tod.expectedHigh || (px+atr*0.7);
+  const todL = tod.expectedLow  || (px-atr*0.7);
+  const todKey = tod.keyLevelToWatch || (vwapA?r1.toFixed(2):s1.toFixed(2));
+
   document.getElementById('shTodayCard').innerHTML = `
     <div class="ol-card">
       <div class="ol-card-hd">
         <div class="ol-card-hd-icon">📅</div>
         <div>
-          <div class="ol-card-hd-title">Today's Outlook <span style="font-size:9px;color:var(--t3);font-family:var(--mono);font-weight:400;margin-left:6px">GPT-4o</span></div>
-          <div class="ol-card-hd-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · ${S.clock?.is_open?'Market Open':'Market Closed'}</div>
+          <div class="ol-card-hd-title">Today's Outlook
+            <span style="font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400;margin-left:6px">GPT-4o Senior Analyst</span>
+          </div>
+          <div class="ol-card-hd-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · ${S.clock?.is_open?'🟢 Market Open':'🔴 Market Closed'}</div>
         </div>
       </div>
       <div class="ol-card-body">
-        <div class="ol-direction-banner ${todDirCss}">
+        <div class="ol-direction-banner ${todCss}">
           <div>
             <div class="ol-dir-label">${todLabel}</div>
-            <div style="font-size:10px;color:var(--t2);margin-top:2px">${cp>=0?'+':''}${cp.toFixed(2)}% · ${vwapA?'above VWAP':'below VWAP'}</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:2px">${cp>=0?'+':''}${cp.toFixed(2)}% today · VWAP ${vwapA?'✓ above':'✗ below'}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--t1)">Current</div>
-            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx)">$${px.toFixed(2)}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--t3);font-weight:600">CURRENT</div>
+            <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--tx)">$${px.toFixed(2)}</div>
           </div>
         </div>
+
         <div class="ol-price-zone">
           <div class="opz high"><div class="opz-label">Expected High</div><div class="opz-price">$${parseFloat(todH).toFixed(2)}</div><div class="opz-note">AI estimate</div></div>
           <div class="opz base"><div class="opz-label">Current</div><div class="opz-price">$${px.toFixed(2)}</div><div class="opz-note">Live price</div></div>
           <div class="opz low"><div class="opz-label">Expected Low</div><div class="opz-price">$${parseFloat(todL).toFixed(2)}</div><div class="opz-note">AI estimate</div></div>
         </div>
-        <div class="ol-narrative">${tod.narrative || ''}</div>
+
+        ${tod.keyLevelToWatch ? `
+        <div style="background:var(--navy);border-radius:var(--r-sm);padding:9px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:10px;color:rgba(255,255,255,.6);font-family:var(--mono)">🎯 KEY LEVEL TO WATCH TODAY</div>
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:#fff">$${parseFloat(todKey).toFixed(2)}</div>
+        </div>
+        ${tod.keyLevelReason ? `<div style="font-size:11px;color:var(--t2);margin-bottom:10px;line-height:1.5;font-style:italic">${tod.keyLevelReason}</div>` : ''}` : ''}
+
+        <div class="ol-narrative">${tod.narrative||''}</div>
+
         ${(tod.facts||[]).length ? `
-          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
-          <div>${(tod.facts||[]).map(f=>`<div class="fact-row"><div class="fact-ic">${f.icon||'📌'}</div><div class="fact-text"><strong>${f.title}</strong> — ${f.body}</div></div>`).join('')}</div>` : ''}
+          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Analysis</div>
+          <div>${(tod.facts||[]).map(f=>`
+            <div class="fact-row">
+              <div class="fact-ic">${f.icon||'📌'}</div>
+              <div class="fact-text"><strong>${f.title}</strong> — ${f.body}</div>
+            </div>`).join('')}
+          </div>` : ''}
       </div>
     </div>`;
 
   // ── WEEK OUTLOOK ──
   const wk = ai.weekOutlook || {};
-  const wkDir = (wk.direction||'NEUTRAL');
-  const wkDirCss = wkDir==='UP'?'up':wkDir==='DOWN'?'dn':'neut';
-  const wkLabel = wkDirCss==='up'?'↑ Bullish Bias This Week':wkDirCss==='dn'?'↓ Bearish Bias This Week':'→ Neutral / Wait-and-See';
-  const wkH = wk.expectedHigh || (px+atr*2.2);
-  const wkL = wk.expectedLow  || (px-atr*2.2);
-  const wkBase = wk.baseCase  || px;
+  const wkDir   = (wk.direction||'NEUTRAL');
+  const wkCss   = wkDir==='UP'?'up':wkDir==='DOWN'?'dn':'neut';
+  const wkLabel = wk.directionLabel || (wkCss==='up'?'↑ Bullish Week':wkCss==='dn'?'↓ Bearish Week':'→ Consolidating');
+  const wkH    = wk.expectedHigh || (px+atr*2.5);
+  const wkL    = wk.expectedLow  || (px-atr*2.5);
+  const wkBase = wk.baseCase     || px;
+  const wkBull = wk.bullCase     || (px*1.06);
+  const wkBear = wk.bearCase     || (px*0.94);
+  const t3m    = ai.threeMonthTargets || {};
+
   document.getElementById('shWeekCard').innerHTML = `
     <div class="ol-card">
       <div class="ol-card-hd">
         <div class="ol-card-hd-icon">📆</div>
         <div>
-          <div class="ol-card-hd-title">This Week's Outlook <span style="font-size:9px;color:var(--t3);font-family:var(--mono);font-weight:400;margin-left:6px">GPT-4o</span></div>
+          <div class="ol-card-hd-title">This Week's Outlook
+            <span style="font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400;margin-left:6px">GPT-4o Senior Analyst</span>
+          </div>
           <div class="ol-card-hd-sub">Week of ${getMonday()}</div>
         </div>
       </div>
       <div class="ol-card-body">
-        <div class="ol-direction-banner ${wkDirCss}">
+        <div class="ol-direction-banner ${wkCss}">
           <div>
             <div class="ol-dir-label">${wkLabel}</div>
-            <div style="font-size:10px;color:var(--t2);margin-top:2px">${a50&&a200?'Both MAs supporting':!a50&&!a200?'Both MAs as resistance':'Between key MAs'}</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:2px">${a50&&a200?'Both MAs support upside':!a50&&!a200?'Both MAs act as resistance':'Between key moving averages'}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-family:var(--mono);font-size:9px;color:var(--t3);font-weight:600">BASE CASE</div>
-            <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--tx)">$${parseFloat(wkBase).toFixed(2)}</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--t3);font-weight:600;text-transform:uppercase">Base Case</div>
+            <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--tx)">$${parseFloat(wkBase).toFixed(2)}</div>
           </div>
         </div>
-        <div class="ol-price-zone">
-          <div class="opz high"><div class="opz-label">Week High</div><div class="opz-price">$${parseFloat(wkH).toFixed(2)}</div><div class="opz-note">Bull scenario</div></div>
-          <div class="opz base"><div class="opz-label">Base Case</div><div class="opz-price">$${parseFloat(wkBase).toFixed(2)}</div><div class="opz-note">Most likely</div></div>
-          <div class="opz low"><div class="opz-label">Week Low</div><div class="opz-price">$${parseFloat(wkL).toFixed(2)}</div><div class="opz-note">Bear scenario</div></div>
+
+        <!-- Weekly price scenarios -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm);padding:9px;text-align:center">
+            <div style="font-size:8px;font-weight:700;color:var(--green-d);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bull Case</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green-d)">$${parseFloat(wkBull).toFixed(2)}</div>
+            <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:2px">${t3m.probabilityBull||'—'}% prob</div>
+          </div>
+          <div style="background:#EEF2FF;border:1px solid rgba(27,45,91,.15);border-radius:var(--r-sm);padding:9px;text-align:center">
+            <div style="font-size:8px;font-weight:700;color:var(--navy);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Base Case</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--navy)">$${parseFloat(wkBase).toFixed(2)}</div>
+            <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:2px">${t3m.probabilityBase||'—'}% prob</div>
+          </div>
+          <div style="background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm);padding:9px;text-align:center">
+            <div style="font-size:8px;font-weight:700;color:var(--red);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bear Case</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--red)">$${parseFloat(wkBear).toFixed(2)}</div>
+            <div style="font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:2px">${t3m.probabilityBear||'—'}% prob</div>
+          </div>
         </div>
-        <div class="ol-narrative">${wk.narrative || ''}</div>
+
+        <div class="ol-narrative">${wk.narrative||''}</div>
+
         ${(wk.facts||[]).length ? `
-          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Supporting Facts</div>
-          <div>${(wk.facts||[]).map(f=>`<div class="fact-row"><div class="fact-ic">${f.icon||'📌'}</div><div class="fact-text"><strong>${f.title}</strong> — ${f.body}</div></div>`).join('')}</div>` : ''}
+          <div style="font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-family:var(--mono)">Weekly Supporting Analysis</div>
+          <div>${(wk.facts||[]).map(f=>`
+            <div class="fact-row">
+              <div class="fact-ic">${f.icon||'📌'}</div>
+              <div class="fact-text"><strong>${f.title}</strong> — ${f.body}</div>
+            </div>`).join('')}
+          </div>` : ''}
       </div>
     </div>`;
 
   // ── 3-MONTH TARGETS ──
-  const t3 = ai.threeMonthTargets || {};
-  const bullPx = t3.bull || (px*1.13);
-  const basePx = t3.base || (px*1.05);
-  const bearPx = t3.bear || (px*0.90);
+  const bullPx  = t3m.bull  || (px*1.15);
+  const basePx  = t3m.base  || (px*1.05);
+  const bearPx  = t3m.bear  || (px*0.88);
   document.getElementById('shTargets').innerHTML = `
-    <div class="target bull"><div class="target-label">Bull Case</div><div class="target-px">$${parseFloat(bullPx).toFixed(2)}</div><div class="target-pct">${((bullPx-px)/px*100).toFixed(0)}%</div></div>
-    <div class="target base"><div class="target-label">Base Case</div><div class="target-px">$${parseFloat(basePx).toFixed(2)}</div><div class="target-pct">${((basePx-px)/px*100).toFixed(0)}%</div></div>
-    <div class="target bear"><div class="target-label">Bear Case</div><div class="target-px">$${parseFloat(bearPx).toFixed(2)}</div><div class="target-pct">${((bearPx-px)/px*100).toFixed(0)}%</div></div>`;
+    <div class="target bull">
+      <div class="target-label">Bull Case</div>
+      <div class="target-px">$${parseFloat(bullPx).toFixed(2)}</div>
+      <div class="target-pct">${((bullPx-px)/px*100).toFixed(0)}%</div>
+      ${t3m.bullReasoning ? `<div style="font-size:9px;color:var(--green-d);margin-top:4px;line-height:1.4;text-align:left">${t3m.bullReasoning}</div>` : ''}
+    </div>
+    <div class="target base">
+      <div class="target-label">Base Case</div>
+      <div class="target-px">$${parseFloat(basePx).toFixed(2)}</div>
+      <div class="target-pct">${((basePx-px)/px*100).toFixed(0)}%</div>
+      ${t3m.baseReasoning ? `<div style="font-size:9px;color:var(--amber);margin-top:4px;line-height:1.4;text-align:left">${t3m.baseReasoning}</div>` : ''}
+    </div>
+    <div class="target bear">
+      <div class="target-label">Bear Case</div>
+      <div class="target-px">$${parseFloat(bearPx).toFixed(2)}</div>
+      <div class="target-pct">${((bearPx-px)/px*100).toFixed(0)}%</div>
+      ${t3m.bearReasoning ? `<div style="font-size:9px;color:var(--red);margin-top:4px;line-height:1.4;text-align:left">${t3m.bearReasoning}</div>` : ''}
+    </div>`;
 
   // ── CATALYSTS ──
   const cats = ai.catalysts || {bull:[],bear:[]};
   document.getElementById('shBull').innerHTML =
-    `<div class="cat-card-hd bull">📈 What's driving it higher</div>` +
+    `<div class="cat-card-hd bull">📈 What could drive price higher</div>` +
     (cats.bull||[]).map((c,i)=>`<div class="cat-item"><div class="cat-num">${i+1}</div><div>${c}</div></div>`).join('');
   document.getElementById('shBear').innerHTML =
-    `<div class="cat-card-hd bear">⚠️ Key risks to watch</div>` +
+    `<div class="cat-card-hd bear">⚠️ Key risks that could push price lower</div>` +
     (cats.bear||[]).map((c,i)=>`<div class="cat-item"><div class="cat-num">${i+1}</div><div>${c}</div></div>`).join('');
 
-  // ── INDICATORS (GPT narrative + calculated values) ──
+  // ── INDICATORS — professional insight panels ──
   const ind = ai.indicators || {};
-  const bbPct = bbU!==bbL ? Math.round((px-bbL)/(bbU-bbL)*100) : 50;
-  const rvolLabel = rvol?(rvol>1.8?'Very High':rvol>1.3?'Above Avg':rvol<0.5?'Very Low':rvol<0.8?'Below Avg':'Normal'):'Loading';
-  const rvolCol   = rvol?(rvol>1.3?'var(--green-d)':rvol<0.6?'var(--red)':'var(--amber)'):'var(--t3)';
+  const tp  = ind.trendPanel      || {};
+  const mp  = ind.momentumPanel   || {};
+  const vp  = ind.volumePanel     || {};
+  const vlp = ind.volatilityPanel || {};
+  const bbPct2 = bbU!==bbL ? Math.round((px-bbL)/(bbU-bbL)*100) : 50;
+  const rvolLabel2 = rvol?(rvol>1.8?'Very High':rvol>1.3?'Above Avg':rvol<0.5?'Very Low':rvol<0.8?'Below Avg':'Normal'):'—';
+  const rvolCol2   = rvol?(rvol>1.3?'var(--green-d)':rvol<0.6?'var(--red)':'var(--amber)'):'var(--t3)';
+
+  const readingColor = (r) => {
+    const pos = ['BULLISH','STRONG','ACCUMULATION'];
+    const neg = ['BEARISH','WEAK','EXHAUSTED','DISTRIBUTION','HIGH'];
+    if (!r) return 'var(--t2)';
+    return pos.includes(r)?'var(--green-d)':neg.includes(r)?'var(--red)':'var(--amber)';
+  };
 
   document.getElementById('shInds').innerHTML = `
+
+    <!-- TREND PANEL -->
     <div class="ind-card">
-      <div class="ind-card-hd">📈 Price Trend <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live Data</span></div>
+      <div class="ind-card-hd" style="display:flex;justify-content:space-between;align-items:center">
+        <span>📈 ${tp.title||'Price Trend'}</span>
+        ${tp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(tp.reading)};font-family:var(--mono)">${tp.reading}</span>` : ''}
+      </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.trendInsight || 'Trend analysis loading...'}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${tp.explanation||ind.trendInsight||''}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">SHORT TERM (50-day)</div>
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Short Term (50d)</div>
             <div style="font-size:13px;font-weight:700;color:${a50?'var(--green-d)':'var(--red)'}">${a50?'✓ Bullish':'✗ Bearish'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Avg $${ma.ma50.toFixed(0)}</div>
+            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">SMA50 $${ma.ma50.toFixed(0)}</div>
           </div>
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">LONG TERM (200-day)</div>
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Long Term (200d)</div>
             <div style="font-size:13px;font-weight:700;color:${a200?'var(--green-d)':'var(--red)'}">${a200?'✓ Intact':'✗ Broken'}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Avg $${ma.ma200.toFixed(0)}</div>
+            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">SMA200 $${ma.ma200.toFixed(0)}</div>
           </div>
         </div>
+        ${tp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+          <strong>👁 Watch:</strong> ${tp.whatToWatch}
+        </div>` : ''}
       </div>
     </div>
+
+    <!-- MOMENTUM PANEL -->
     <div class="ind-card">
-      <div class="ind-card-hd">⚡ Momentum <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live RSI/MACD</span></div>
+      <div class="ind-card-hd" style="display:flex;justify-content:space-between;align-items:center">
+        <span>⚡ ${mp.title||'Momentum'}</span>
+        ${mp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(mp.reading)};font-family:var(--mono)">${mp.reading}</span>` : ''}
+      </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.momentumInsight || 'Momentum analysis loading...'}</div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <div style="font-size:10px;color:var(--t2);font-family:var(--mono);width:64px">RSI ${rsi.toFixed(0)}</div>
-          <div style="flex:1;height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${mp.explanation||ind.momentumInsight||''}</div>
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t2);font-family:var(--mono);margin-bottom:4px">
+            <span>RSI ${rsi.toFixed(0)}</span>
+            <span style="color:${rsi>70?'var(--red)':rsi<35?'var(--green-d)':'var(--navy)'};font-weight:600">${rsi>70?'Overheated — slow down risk':rsi<35?'Oversold — bounce potential':'Healthy — room to move'}</span>
+          </div>
+          <div style="height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border)">
             <div style="height:100%;width:${rsi}%;background:${rsi>70?'var(--red)':rsi<35?'var(--green)':'var(--navy)'};border-radius:4px"></div>
           </div>
-          <div style="font-size:10px;font-weight:700;color:${rsi>70?'var(--red)':rsi<35?'var(--green-d)':'var(--navy)'};font-family:var(--mono)">${rsi>70?'Hot🔥':rsi<35?'Cold❄️':'Neutral'}</div>
         </div>
+        ${mp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+          <strong>👁 Watch:</strong> ${mp.whatToWatch}
+        </div>` : ''}
       </div>
     </div>
+
+    <!-- VOLUME PANEL -->
     <div class="ind-card">
-      <div class="ind-card-hd">🏦 Volume & Institutional Flow <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live Volume</span></div>
+      <div class="ind-card-hd" style="display:flex;justify-content:space-between;align-items:center">
+        <span>🏦 ${vp.title||'Volume & Institutional Activity'}</span>
+        ${vp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(vp.reading)};font-family:var(--mono)">${vp.reading}</span>` : ''}
+      </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.volumeInsight || 'Volume analysis loading...'}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${vp.explanation||ind.volumeInsight||''}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">TODAY'S VOLUME</div>
-            <div style="font-size:13px;font-weight:700;color:${rvolCol}">${rvolLabel}</div>
-            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">${fvol(document.getElementById('shStats') ? 0 : 0)} RVOL ${rvol?rvol.toFixed(1)+'×':'—'}</div>
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Volume Level</div>
+            <div style="font-size:13px;font-weight:700;color:${rvolCol2}">${rvolLabel2}</div>
+            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">RVOL ${rvol?rvol.toFixed(2)+'×':'—'}</div>
           </div>
           <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px">
-            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);margin-bottom:3px">VWAP POSITION</div>
+            <div style="font-size:9px;font-weight:700;color:var(--t3);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">VWAP Signal</div>
             <div style="font-size:13px;font-weight:700;color:${vwapA?'var(--green-d)':'var(--red)'}">${vwapA?'✓ Above':'✗ Below'}</div>
+            <div style="font-size:9px;color:var(--t2);font-family:var(--mono);margin-top:2px">Inst. benchmark</div>
           </div>
         </div>
+        ${vp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+          <strong>👁 Watch:</strong> ${vp.whatToWatch}
+        </div>` : ''}
       </div>
     </div>
+
+    <!-- VOLATILITY PANEL -->
     <div class="ind-card">
-      <div class="ind-card-hd">📐 Volatility & Range <span style="float:right;font-size:8px;color:var(--t3);font-family:var(--mono);font-weight:400">GPT-4o + Live ATR/BB</span></div>
+      <div class="ind-card-hd" style="display:flex;justify-content:space-between;align-items:center">
+        <span>📐 ${vlp.title||'Volatility & Risk'}</span>
+        ${vlp.reading ? `<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--card2);color:${readingColor(vlp.reading)};font-family:var(--mono)">${vlp.reading}</span>` : ''}
+      </div>
       <div style="padding:12px 14px">
-        <div style="font-size:12px;color:var(--t1);line-height:1.7;margin-bottom:10px">${ind.volatilityInsight || 'Volatility analysis loading...'}</div>
-        <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-bottom:4px">Price position in recent band</div>
-        <div style="height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
-          <div style="height:100%;width:${bbPct}%;background:${bbPct>80?'var(--red)':bbPct<20?'var(--green)':'var(--navy)'};border-radius:4px"></div>
+        <div style="font-size:12px;color:var(--t1);line-height:1.75;margin-bottom:12px">${vlp.explanation||ind.volatilityInsight||''}</div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:10px;color:var(--t2);font-family:var(--mono);margin-bottom:4px">Price position within recent trading band</div>
+          <div style="height:7px;background:var(--card2);border-radius:4px;overflow:hidden;border:1px solid var(--border);margin-bottom:4px">
+            <div style="height:100%;width:${bbPct2}%;background:${bbPct2>80?'var(--red)':bbPct2<20?'var(--green)':'var(--navy)'};border-radius:4px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);font-family:var(--mono)">
+            <span>Lower $${bbL.toFixed(0)}</span>
+            <span style="color:var(--navy);font-weight:600">${bbPct2}% of band · ATR $${atr.toFixed(2)}/day</span>
+            <span>Upper $${bbU.toFixed(0)}</span>
+          </div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);font-family:var(--mono)">
-          <span>Lower $${bbL.toFixed(0)}</span>
-          <span style="color:var(--navy);font-weight:600">${bbPct}% of band</span>
-          <span>Upper $${bbU.toFixed(0)}</span>
-        </div>
+        ${vlp.whatToWatch ? `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:8px 11px;font-size:11px;color:var(--amber);line-height:1.5">
+          <strong>👁 Watch:</strong> ${vlp.whatToWatch}
+        </div>` : ''}
       </div>
     </div>
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);margin-bottom:7px">📋 Data Sources</div>
+
+    <!-- DATA SOURCES -->
+    <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;margin-bottom:10px">
+      <div style="font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);margin-bottom:7px">📋 Analysis Sources & Methodology</div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Live price, volume & VWAP — Alpaca Markets API</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> RSI, MACD, Bollinger Bands — calculated from 30 days of real bar data</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Narrative analysis — GPT-4o reading live numbers in real time</div>
-        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--amber);font-weight:700">⚠</span> SMA 50/200 are reference values — updated periodically</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Live price, volume, VWAP — Alpaca Markets API (real-time)</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> RSI, MACD, Bollinger Bands — computed from 220 days of actual bar data</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> SMA 50 & SMA 200 — calculated from real closing prices, not estimates</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> AI narrative — GPT-4o Senior Analyst reading live data in real time</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> News context — Alpaca News API (latest headlines for this ticker)</div>
+        <div style="font-size:10px;color:var(--t2)"><span style="color:var(--green-d);font-weight:700">✓</span> Analyst consensus — Financial Modeling Prep API (live Wall Street data)</div>
       </div>
+      ${ai.disclaimer ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:9px;color:var(--t3);line-height:1.6">${ai.disclaimer}</div>` : ''}
     </div>`;
 }
 
