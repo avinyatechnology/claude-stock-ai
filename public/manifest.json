@@ -1,0 +1,27 @@
+{
+  "name": "GFinHub — AI Stock Intelligence",
+  "short_name": "GFinHub",
+  "description": "Professional AI-powered stock analysis. Live market data, GPT-4o insights, institutional flow signals.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B2D5B",
+  "theme_color": "#1B2D5B",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["finance", "business"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

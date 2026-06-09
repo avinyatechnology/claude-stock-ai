@@ -4,6 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GFinHub — AI Stock Intelligence</title>
+
+<!-- ── PWA MANIFEST ── -->
+<link rel="manifest" href="/manifest.json">
+
+<!-- ── iOS PWA META TAGS ── -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GFinHub">
+<link rel="apple-touch-icon" href="/icon-512.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+
+<!-- ── ANDROID / CHROME PWA ── -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="GFinHub">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+<!-- ── THEME + SPLASH ── -->
+<meta name="theme-color" content="#1B2D5B">
+<meta name="msapplication-TileColor" content="#1B2D5B">
+<meta name="msapplication-TileImage" content="/icon-512.png">
+
+<!-- ── SEO + SOCIAL ── -->
+<meta name="description" content="Professional AI-powered stock analysis. Live market data, GPT-4o insights, institutional flow signals.">
+<meta property="og:title" content="GFinHub — AI Stock Intelligence">
+<meta property="og:description" content="Professional AI stock analysis powered by GPT-4o and live market data.">
+<meta property="og:type" content="website">
+
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -973,7 +1002,56 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   flex-shrink: 0;
 }
 
-/* ── DISCLAIMER ── */
+/* ── PWA UPDATE BANNER ── */
+.update-banner {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  width: calc(var(--w) - 28px);
+  background: var(--navy);
+  border-radius: var(--r);
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 200;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transition: all .3s cubic-bezier(.32,.72,0,1);
+  pointer-events: none;
+}
+.update-banner.on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: all;
+}
+@media(max-width:420px){
+  .update-banner { width: calc(100vw - 28px); left: 14px; transform: translateY(20px); }
+  .update-banner.on { transform: translateY(0); }
+}
+.update-banner-text {
+  flex: 1;
+  font-size: 13px;
+  color: #fff;
+  line-height: 1.4;
+}
+.update-banner-text strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.update-banner-text span { color: rgba(255,255,255,.6); font-size: 12px; }
+.update-btn {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.update-btn:active { transform: scale(.95); }
 .disclaimer {
   background: var(--card2);
   border: 1px solid var(--border);
@@ -1239,11 +1317,80 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   </div><!-- /sh-scroll -->
 </div><!-- /sheet -->
 
+<!-- ── PWA UPDATE BANNER ── -->
+<div class="update-banner" id="updateBanner">
+  <div class="update-banner-text">
+    <strong>✨ Update Available</strong>
+    <span>GFinHub has been updated. Tap to reload.</span>
+  </div>
+  <button class="update-btn" onclick="applyUpdate()">Update Now</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const API = window.location.origin;
+
+// ── PWA SERVICE WORKER + UPDATE DETECTION ────────────────────────────────────
+let swRegistration = null;
+let newWorkerWaiting = null;
+
+function applyUpdate() {
+  // Tell the waiting service worker to take over immediately
+  if (newWorkerWaiting) {
+    newWorkerWaiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+  // Hide banner and reload to get new version
+  document.getElementById('updateBanner').classList.remove('on');
+  window.location.reload();
+}
+
+function showUpdateBanner() {
+  document.getElementById('updateBanner').classList.add('on');
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+      console.log('[PWA] Service worker registered');
+
+      // New SW installed and waiting
+      swRegistration.addEventListener('updatefound', () => {
+        const newWorker = swRegistration.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // There is a new version waiting — show the update banner
+            newWorkerWaiting = newWorker;
+            showUpdateBanner();
+          }
+        });
+      });
+
+      // Handle case where SW was updated while page was open
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // SW took over — safe to reload silently if banner was shown
+        console.log('[PWA] Controller changed — new version active');
+      });
+
+      // Check for updates every 60 seconds while the app is open
+      setInterval(() => {
+        swRegistration.update().catch(() => {});
+      }, 60000);
+
+      // Also check for updates when app comes back to foreground
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          swRegistration.update().catch(() => {});
+        }
+      });
+
+    } catch(e) {
+      console.log('[PWA] Service worker registration failed:', e);
+    }
+  });
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const S = {
