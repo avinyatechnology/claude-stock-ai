@@ -647,6 +647,332 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 .news-tag.bear { background: var(--red-bg);   color: var(--red);     border-color: var(--red-brd); }
 .news-tag.neut { background: var(--amber-bg); color: var(--amber);   border-color: var(--amber-brd); }
 
+/* ── SUMMARY REDESIGN ── */
+.sum-hero {
+  background: var(--navy);
+  border-radius: var(--r);
+  padding: 18px 18px 16px;
+  margin-bottom: 10px;
+}
+.sum-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.sum-hero-meta {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.45);
+  font-family: var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+.sum-verdict-pill {
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+.sum-verdict-reason {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.sum-conf-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.sum-conf-label {
+  font-size: 11px;
+  color: rgba(255,255,255,.45);
+  font-family: var(--mono);
+}
+.sum-conf-pct {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.sum-conf-track {
+  height: 5px;
+  background: rgba(255,255,255,.12);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.sum-conf-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .6s;
+}
+.sum-regime {
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  line-height: 1.6;
+  font-style: italic;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+
+/* Earnings alert */
+.sum-earnings-alert {
+  background: #FFFBF0;
+  border: 1.5px solid var(--amber-brd);
+  border-left: 4px solid var(--amber);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.sum-earnings-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+  font-family: var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.sum-earnings-body {
+  font-size: 13px;
+  color: var(--tx);
+  line-height: 1.65;
+}
+
+/* Outlook cards */
+.sum-outlook-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-outlook-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sum-outlook-icon { font-size: 18px; flex-shrink: 0; }
+.sum-outlook-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: .02em;
+}
+.sum-outlook-text {
+  font-size: 14px;
+  color: var(--t1);
+  line-height: 1.75;
+}
+
+/* Driver / Risk list cards */
+.sum-list-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-list-hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.sum-list-hd-bull { background: var(--green-bg); color: var(--green-d); }
+.sum-list-hd-bear { background: var(--red-bg);   color: var(--red); }
+.sum-list-hd-icon {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.sum-list-hd-bull .sum-list-hd-icon { background: var(--green); color: #fff; }
+.sum-list-hd-bear .sum-list-hd-icon { background: var(--red);   color: #fff; }
+.sum-list-body { padding: 4px 0; }
+.sum-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sum-list-item:last-child { border-bottom: none; }
+.sum-list-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+.sum-list-num-bull { background: var(--green-bg); color: var(--green-d); border: 1px solid var(--green-brd); }
+.sum-list-num-bear { background: var(--red-bg);   color: var(--red);     border: 1px solid var(--red-brd); }
+.sum-list-text {
+  font-size: 13px;
+  color: var(--t1);
+  line-height: 1.65;
+  flex: 1;
+}
+
+/* Price scenarios */
+.sum-scenarios-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-scenarios-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card2);
+}
+.sum-scenario {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sum-scenario:last-child { border-bottom: none; }
+.sum-scenario-bull { background: var(--green-bg); }
+.sum-scenario-neut { background: #EEF2FF; }
+.sum-scenario-bear { background: var(--red-bg); }
+.sum-scenario-left {
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 72px;
+}
+.sum-scenario-label {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.sum-scenario-price {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.sum-scenario-prob {
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 600;
+  opacity: .8;
+}
+.sum-scenario-desc {
+  font-size: 13px;
+  color: var(--t1);
+  line-height: 1.65;
+  padding-top: 3px;
+  flex: 1;
+}
+
+/* Key levels */
+.sum-levels-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-levels-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.sum-levels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sum-level {
+  border-radius: var(--r-sm);
+  padding: 13px 12px;
+  text-align: center;
+  border: 1px solid;
+}
+.sum-level-support { background: var(--green-bg); border-color: var(--green-brd); }
+.sum-level-resist  { background: var(--red-bg);   border-color: var(--red-brd); }
+.sum-level-icon { font-size: 16px; margin-bottom: 5px; }
+.sum-level-label {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.sum-level-support .sum-level-label { color: var(--green-d); }
+.sum-level-resist  .sum-level-label { color: var(--red); }
+.sum-level-price {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.sum-level-support .sum-level-price { color: var(--green-d); }
+.sum-level-resist  .sum-level-price { color: var(--red); }
+.sum-level-source { font-size: 11px; color: var(--t2); }
+
+.sum-stop-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-brd);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  gap: 12px;
+}
+.sum-stop-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+  font-family: var(--mono);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.sum-stop-note { font-size: 12px; color: var(--t1); line-height: 1.5; }
+.sum-stop-price {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--amber);
+  flex-shrink: 0;
+}
+
 /* ── DISCLAIMER ── */
 .disclaimer {
   background: var(--card2);
@@ -1794,134 +2120,145 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   };
   const vm = verdictMap[sm.verdict] || verdictMap['Neutral'];
 
-  // ── SUMMARY TAB ──────────────────────────────────────────────────────────────
+  // ── SUMMARY TAB — clean mobile redesign ─────────────────────────────────────
   document.getElementById('shAISummary').innerHTML = `
 
-    <!-- VERDICT CARD -->
-    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow)">
-      <!-- Navy header bar -->
-      <div style="background:var(--navy);padding:14px 16px 12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div>
-            <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">AI Intelligence Summary · GPT-4o</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.4);font-family:var(--mono)">${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
-          </div>
-          <div style="background:${vm.bg};border:1.5px solid ${vm.brd};border-radius:20px;padding:7px 16px;font-size:14px;font-weight:800;color:${vm.col}">${vm.dot} ${sm.verdict||'Analyzing'}</div>
-        </div>
-        <!-- Confidence bar -->
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-size:10px;color:rgba(255,255,255,.5);font-family:var(--mono);white-space:nowrap">Confidence ${conf}%</div>
-          <div style="flex:1;height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${conf}%;background:${confCol};border-radius:3px;transition:width .6s"></div>
-          </div>
-        </div>
+    <!-- 1. VERDICT HERO — big, clear, immediate -->
+    <div class="sum-hero">
+      <div class="sum-hero-top">
+        <div class="sum-hero-meta">AI Intelligence Summary · GPT-4o</div>
+        <div class="sum-verdict-pill" style="background:${vm.bg};border:1.5px solid ${vm.brd};color:${vm.col}">${vm.dot} ${sm.verdict||'Analyzing'}</div>
       </div>
-      <!-- Verdict reason -->
-      ${sm.verdictReason?`<div style="padding:14px 16px 0;font-size:14px;font-weight:600;color:var(--tx);line-height:1.6;border-left:4px solid ${vm.col};margin:0">${sm.verdictReason}</div>`:''}
-      <!-- Market regime -->
-      ${sm.marketRegime?`<div style="padding:10px 16px 14px;font-size:12px;color:var(--t2);line-height:1.55;font-style:italic">${sm.marketRegime}</div>`:''}
+      <div class="sum-verdict-reason">${sm.verdictReason||''}</div>
+      <div class="sum-conf-row">
+        <span class="sum-conf-label">AI Confidence</span>
+        <span class="sum-conf-pct" style="color:${confCol}">${conf}%</span>
+      </div>
+      <div class="sum-conf-track">
+        <div class="sum-conf-fill" style="width:${conf}%;background:${confCol}"></div>
+      </div>
+      ${sm.marketRegime?`<div class="sum-regime">${sm.marketRegime}</div>`:''}
     </div>
 
-    <!-- TODAY + WEEK OUTLOOK (side by side summary) -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:13px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:700;color:var(--t2);font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">📅 Today</div>
-        <div style="font-size:13px;color:var(--t1);line-height:1.65">${sm.todayOutlook||'Generating...'}</div>
-      </div>
-      <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:13px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:700;color:var(--t2);font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">📆 This Week</div>
-        <div style="font-size:13px;color:var(--t1);line-height:1.65">${sm.weekOutlook||'Generating...'}</div>
-      </div>
-    </div>
-
-    <!-- EARNINGS WARNING if applicable -->
+    <!-- 2. EARNINGS ALERT — only shown when relevant -->
     ${sm.earningsNote?`
-    <div style="background:linear-gradient(135deg,#FFF7E6,#FFFBF0);border:1.5px solid var(--amber-brd);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)">
-      <div style="font-size:11px;font-weight:700;color:var(--amber);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px">⚠️ Earnings Event</div>
-      <div style="font-size:13px;color:var(--tx);line-height:1.65">${sm.earningsNote}</div>
+    <div class="sum-earnings-alert">
+      <div class="sum-earnings-title">Upcoming Earnings</div>
+      <div class="sum-earnings-body">${sm.earningsNote}</div>
     </div>`:''}
 
-    <!-- KEY DRIVERS -->
+    <!-- 3. TODAY / THIS WEEK — stacked, full width, readable -->
+    <div class="sum-outlook-card">
+      <div class="sum-outlook-row">
+        <div class="sum-outlook-icon">📅</div>
+        <div class="sum-outlook-label">Today's Outlook</div>
+      </div>
+      <div class="sum-outlook-text">${sm.todayOutlook||'Generating outlook...'}</div>
+    </div>
+
+    <div class="sum-outlook-card">
+      <div class="sum-outlook-row">
+        <div class="sum-outlook-icon">📆</div>
+        <div class="sum-outlook-label">This Week's Outlook</div>
+      </div>
+      <div class="sum-outlook-text">${sm.weekOutlook||'Generating outlook...'}</div>
+    </div>
+
+    <!-- 4. KEY DRIVERS — clean list -->
     ${drivers.length?`
-    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow)">
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--green-bg);display:flex;align-items:center;gap:8px">
-        <span style="font-size:15px">📈</span>
-        <span style="font-size:12px;font-weight:700;color:var(--green-d);letter-spacing:.04em;text-transform:uppercase">Key Drivers</span>
+    <div class="sum-list-card">
+      <div class="sum-list-hd sum-list-hd-bull">
+        <span class="sum-list-hd-icon">↑</span>
+        <span>Key Drivers</span>
       </div>
-      ${drivers.map((d,i)=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--t1);line-height:1.6">
-        <span style="background:var(--green-bg);color:var(--green-d);border:1px solid var(--green-brd);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${i+1}</span>
-        <span>${d}</span>
-      </div>`).join('')}
+      <div class="sum-list-body">
+        ${drivers.map((d,i)=>`
+        <div class="sum-list-item">
+          <div class="sum-list-num sum-list-num-bull">${i+1}</div>
+          <div class="sum-list-text">${d}</div>
+        </div>`).join('')}
+      </div>
     </div>`:''}
 
-    <!-- KEY RISKS -->
+    <!-- 5. KEY RISKS -->
     ${risks.length?`
-    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow)">
-      <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--red-bg);display:flex;align-items:center;gap:8px">
-        <span style="font-size:15px">⚠️</span>
-        <span style="font-size:12px;font-weight:700;color:var(--red);letter-spacing:.04em;text-transform:uppercase">Key Risks</span>
+    <div class="sum-list-card">
+      <div class="sum-list-hd sum-list-hd-bear">
+        <span class="sum-list-hd-icon">!</span>
+        <span>Key Risks</span>
       </div>
-      ${risks.map((r,i)=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--t1);line-height:1.6">
-        <span style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-brd);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${i+1}</span>
-        <span>${r}</span>
-      </div>`).join('')}
+      <div class="sum-list-body">
+        ${risks.map((r,i)=>`
+        <div class="sum-list-item">
+          <div class="sum-list-num sum-list-num-bear">${i+1}</div>
+          <div class="sum-list-text">${r}</div>
+        </div>`).join('')}
+      </div>
     </div>`:''}
 
-    <!-- PRICE SCENARIOS -->
+    <!-- 6. PRICE SCENARIOS — 3 stacked rows, highly readable -->
     ${ps.bull||ps.neutral||ps.bear?`
-    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;margin-bottom:13px">💡 Potential Price Scenarios</div>
-      <div style="display:flex;flex-direction:column;gap:9px">
-        ${ps.bull?`<div style="display:flex;align-items:flex-start;gap:13px;padding:12px 14px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm)">
-          <div style="flex-shrink:0;text-align:center;min-width:68px">
-            <div style="font-size:10px;font-weight:700;color:var(--green-d);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bullish</div>
-            <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green-d)">$${parseFloat(ps.bull.target).toFixed(2)}</div>
-            ${ps.bull.probability?`<div style="font-size:10px;color:var(--green-d);font-family:var(--mono);margin-top:2px">${ps.bull.probability}% prob</div>`:''}
-          </div>
-          <div style="font-size:13px;color:var(--t1);line-height:1.65;padding-top:2px">${ps.bull.description||''}</div>
-        </div>`:''}
-        ${ps.neutral?`<div style="display:flex;align-items:flex-start;gap:13px;padding:12px 14px;background:#EEF2FF;border:1px solid rgba(27,45,91,.15);border-radius:var(--r-sm)">
-          <div style="flex-shrink:0;text-align:center;min-width:68px">
-            <div style="font-size:10px;font-weight:700;color:var(--navy);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Neutral</div>
-            <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--navy)">$${parseFloat(ps.neutral.target).toFixed(2)}</div>
-            ${ps.neutral.probability?`<div style="font-size:10px;color:var(--navy);font-family:var(--mono);margin-top:2px">${ps.neutral.probability}% prob</div>`:''}
-          </div>
-          <div style="font-size:13px;color:var(--t1);line-height:1.65;padding-top:2px">${ps.neutral.description||''}</div>
-        </div>`:''}
-        ${ps.bear?`<div style="display:flex;align-items:flex-start;gap:13px;padding:12px 14px;background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm)">
-          <div style="flex-shrink:0;text-align:center;min-width:68px">
-            <div style="font-size:10px;font-weight:700;color:var(--red);font-family:var(--mono);text-transform:uppercase;margin-bottom:3px">Bearish</div>
-            <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--red)">$${parseFloat(ps.bear.target).toFixed(2)}</div>
-            ${ps.bear.probability?`<div style="font-size:10px;color:var(--red);font-family:var(--mono);margin-top:2px">${ps.bear.probability}% prob</div>`:''}
-          </div>
-          <div style="font-size:13px;color:var(--t1);line-height:1.65;padding-top:2px">${ps.bear.description||''}</div>
-        </div>`:''}
-      </div>
+    <div class="sum-scenarios-card">
+      <div class="sum-scenarios-title">Price Scenarios</div>
+      ${ps.bull?`
+      <div class="sum-scenario sum-scenario-bull">
+        <div class="sum-scenario-left">
+          <div class="sum-scenario-label" style="color:var(--green-d)">Bullish</div>
+          <div class="sum-scenario-price" style="color:var(--green-d)">$${parseFloat(ps.bull.target).toFixed(2)}</div>
+          ${ps.bull.probability?`<div class="sum-scenario-prob" style="color:var(--green-d)">${ps.bull.probability}% prob</div>`:''}
+        </div>
+        <div class="sum-scenario-desc">${ps.bull.description||''}</div>
+      </div>`:''}
+      ${ps.neutral?`
+      <div class="sum-scenario sum-scenario-neut">
+        <div class="sum-scenario-left">
+          <div class="sum-scenario-label" style="color:var(--navy)">Neutral</div>
+          <div class="sum-scenario-price" style="color:var(--navy)">$${parseFloat(ps.neutral.target).toFixed(2)}</div>
+          ${ps.neutral.probability?`<div class="sum-scenario-prob" style="color:var(--navy)">${ps.neutral.probability}% prob</div>`:''}
+        </div>
+        <div class="sum-scenario-desc">${ps.neutral.description||''}</div>
+      </div>`:''}
+      ${ps.bear?`
+      <div class="sum-scenario sum-scenario-bear">
+        <div class="sum-scenario-left">
+          <div class="sum-scenario-label" style="color:var(--red)">Bearish</div>
+          <div class="sum-scenario-price" style="color:var(--red)">$${parseFloat(ps.bear.target).toFixed(2)}</div>
+          ${ps.bear.probability?`<div class="sum-scenario-prob" style="color:var(--red)">${ps.bear.probability}% prob</div>`:''}
+        </div>
+        <div class="sum-scenario-desc">${ps.bear.description||''}</div>
+      </div>`:''}
     </div>`:''}
 
-    <!-- KEY LEVELS + STOP -->
+    <!-- 7. KEY LEVELS — 2 columns max, stop reference full-width below -->
     ${kl.support||kl.resistance?`
-    <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;margin-bottom:12px">📐 Key Price Levels</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr${kl.stopReference?' 1fr':''};gap:8px;margin-bottom:${kl.stopNote?'10px':'0'}">
-        ${kl.support?`<div style="background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r-sm);padding:13px 10px;text-align:center">
-          <div style="font-size:10px;font-weight:700;color:var(--green-d);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">🛡 Support</div>
-          <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--green-d)">$${parseFloat(kl.support).toFixed(2)}</div>
-          <div style="font-size:11px;color:var(--t2);margin-top:4px">${kl.supportLabel||''}</div>
+    <div class="sum-levels-card">
+      <div class="sum-levels-title">Key Price Levels</div>
+      <div class="sum-levels-grid">
+        ${kl.support?`
+        <div class="sum-level sum-level-support">
+          <div class="sum-level-icon">🛡</div>
+          <div class="sum-level-label">Support</div>
+          <div class="sum-level-price">$${parseFloat(kl.support).toFixed(2)}</div>
+          <div class="sum-level-source">${kl.supportLabel||''}</div>
         </div>`:''}
-        ${kl.resistance?`<div style="background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r-sm);padding:13px 10px;text-align:center">
-          <div style="font-size:10px;font-weight:700;color:var(--red);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">🚧 Resistance</div>
-          <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--red)">$${parseFloat(kl.resistance).toFixed(2)}</div>
-          <div style="font-size:11px;color:var(--t2);margin-top:4px">${kl.resistanceLabel||''}</div>
-        </div>`:''}
-        ${kl.stopReference?`<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:13px 10px;text-align:center">
-          <div style="font-size:10px;font-weight:700;color:var(--amber);font-family:var(--mono);text-transform:uppercase;margin-bottom:5px">🔴 Stop Ref</div>
-          <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--amber)">$${parseFloat(kl.stopReference).toFixed(2)}</div>
-          <div style="font-size:11px;color:var(--t2);margin-top:4px">Risk exit</div>
+        ${kl.resistance?`
+        <div class="sum-level sum-level-resist">
+          <div class="sum-level-icon">🚧</div>
+          <div class="sum-level-label">Resistance</div>
+          <div class="sum-level-price">$${parseFloat(kl.resistance).toFixed(2)}</div>
+          <div class="sum-level-source">${kl.resistanceLabel||''}</div>
         </div>`:''}
       </div>
-      ${kl.stopNote?`<div style="font-size:12px;color:var(--t2);line-height:1.6;padding-top:8px;border-top:1px solid var(--border);font-style:italic">📌 ${kl.stopNote}</div>`:''}
+      ${kl.stopReference?`
+      <div class="sum-stop-row">
+        <div>
+          <div class="sum-stop-label">⚡ Stop Reference</div>
+          <div class="sum-stop-note">${kl.stopNote||'Risk management reference point'}</div>
+        </div>
+        <div class="sum-stop-price">$${parseFloat(kl.stopReference).toFixed(2)}</div>
+      </div>`:''}
     </div>`:''}
+
   `;
 
   // ── QUICK STATS ──────────────────────────────────────────────────────────────
