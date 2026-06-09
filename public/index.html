@@ -356,9 +356,10 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   padding: 6px 14px; border-radius: 20px;
   font-size: 13px; font-weight: 800; letter-spacing: .04em;
 }
-.sh-rec-big.buy  { background: var(--green-bg); color: var(--green-l); border: 1px solid rgba(45,198,83,.3); }
-.sh-rec-big.hold { background: var(--amber-bg); color: #FFB020;         border: 1px solid rgba(217,119,6,.3); }
-.sh-rec-big.sell { background: var(--red-bg);   color: #FC8181;         border: 1px solid rgba(229,62,62,.3); }
+.sh-rec-big.buy      { background: var(--green-bg); color: var(--green-l); border: 1px solid rgba(45,198,83,.3); }
+.sh-rec-big.hold     { background: var(--amber-bg); color: #FFB020;         border: 1px solid rgba(217,119,6,.3); }
+.sh-rec-big.sell     { background: var(--red-bg);   color: #FC8181;         border: 1px solid rgba(229,62,62,.3); }
+.sh-rec-big.analyzing{ background: rgba(255,255,255,.08); color: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.12); }
 
 .sh-px-row { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; }
 .sh-px { font-family: var(--mono); font-size: 30px; font-weight: 600; color: #fff; }
@@ -1871,7 +1872,7 @@ async function openSheet(sym) {
   document.getElementById('shSym').textContent  = sym;
   document.getElementById('shNm').textContent   = 'Loading...';
   document.getElementById('shRec').textContent  = '⚡ Analyzing...';
-  document.getElementById('shRec').className    = 'sh-rec-big hold';
+  document.getElementById('shRec').className    = 'sh-rec-big analyzing';
   document.getElementById('shPx').textContent   = '—';
   document.getElementById('shUpd').textContent  = 'GFinHub AI engine running...';
   document.getElementById('shConfBar').style.width = '0%';
@@ -2255,14 +2256,32 @@ async function buildAnalysis(sym, snap, bars, analystData) {
 
 // ── RENDER AI ANALYSIS ──────────────────────────────────────────────────────
 function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol, bbU, bbL, ma, s1, r1, fmp) {
-  const recType = (ai.recommendation||'').toLowerCase()==='buy'?'buy':(ai.recommendation||'').toLowerCase()==='sell'?'sell':'hold';
-  const recLabel = recType==='buy'?'▲ BUY':recType==='sell'?'▼ SELL':'⏸ HOLD';
-  const conf = Math.min(99,Math.max(1,ai.confidence||50));
-  const confCol = recType==='buy'?'#2DC653':recType==='sell'?'#E53E3E':'#D97706';
+
+  // ── Robust recommendation parsing ──
+  // GPT sometimes returns "Strong Buy", "Buy", "Sell", "Strong Sell", "Hold" etc.
+  const rawRec = (ai.recommendation || ai.aiSummary?.verdict || '').toLowerCase();
+  const recType =
+    rawRec.includes('strong buy') || rawRec.includes('bullish') ? 'buy' :
+    rawRec.includes('buy')        ? 'buy' :
+    rawRec.includes('strong sell')|| rawRec.includes('bearish') ? 'sell' :
+    rawRec.includes('sell')       ? 'sell' : 'hold';
+
+  // Also cross-check with confidence — if confidence > 70 and verdict says bullish, force buy
+  const conf    = Math.min(99, Math.max(1, ai.confidence || 50));
+  const verdict = (ai.aiSummary?.verdict || '').toLowerCase();
+  const finalRec =
+    verdict.includes('cautiously bullish') && conf >= 55 ? 'buy' :
+    verdict.includes('bullish')             && conf >= 50 ? 'buy' :
+    verdict.includes('cautiously bearish')  && conf >= 55 ? 'sell' :
+    verdict.includes('bearish')             && conf >= 50 ? 'sell' :
+    recType;
+
+  const recLabel = finalRec==='buy'?'▲ BUY':finalRec==='sell'?'▼ SELL':'⏸ HOLD';
+  const confCol  = finalRec==='buy'?'#2DC653':finalRec==='sell'?'#E53E3E':'#D97706';
 
   // Hero
   document.getElementById('shRec').textContent = recLabel;
-  document.getElementById('shRec').className   = `sh-rec-big ${recType}`;
+  document.getElementById('shRec').className   = `sh-rec-big ${finalRec}`;
   document.getElementById('shConfBar').style.width      = conf+'%';
   document.getElementById('shConfBar').style.background = confCol;
   document.getElementById('shConfPct').textContent      = conf+'% · GPT-4o';
@@ -2274,13 +2293,16 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   const risks   = sm.keyRisks   || [];
 
   const verdictMap = {
-    'Bullish':          {col:'var(--green-d)',   bg:'var(--green-bg)',  brd:'var(--green-brd)',  dot:'🟢'},
-    'Cautiously Bullish':{col:'var(--green-d)',  bg:'var(--green-bg)',  brd:'var(--green-brd)',  dot:'🟡'},
-    'Neutral':          {col:'var(--amber)',      bg:'var(--amber-bg)', brd:'var(--amber-brd)',  dot:'🟡'},
-    'Cautiously Bearish':{col:'var(--red)',       bg:'var(--red-bg)',   brd:'var(--red-brd)',    dot:'🟠'},
-    'Bearish':          {col:'var(--red)',        bg:'var(--red-bg)',   brd:'var(--red-brd)',    dot:'🔴'},
+    'Bullish':          {col:'var(--green-d)',  bg:'var(--green-bg)',  brd:'var(--green-brd)', dot:'🟢'},
+    'Cautiously Bullish':{col:'var(--green-d)', bg:'var(--green-bg)',  brd:'var(--green-brd)', dot:'🟡'},
+    'Neutral':          {col:'var(--amber)',    bg:'var(--amber-bg)',  brd:'var(--amber-brd)', dot:'🟡'},
+    'Cautiously Bearish':{col:'var(--red)',     bg:'var(--red-bg)',    brd:'var(--red-brd)',   dot:'🟠'},
+    'Bearish':          {col:'var(--red)',      bg:'var(--red-bg)',    brd:'var(--red-brd)',   dot:'🔴'},
   };
-  const vm = verdictMap[sm.verdict] || verdictMap['Neutral'];
+  // Fall back using finalRec if verdict string not in map
+  const vmFallback = finalRec==='buy' ? verdictMap['Bullish']
+    : finalRec==='sell' ? verdictMap['Bearish'] : verdictMap['Neutral'];
+  const vm = verdictMap[sm.verdict] || vmFallback;
 
   // ── SUMMARY TAB — clean mobile redesign ─────────────────────────────────────
   document.getElementById('shAISummary').innerHTML = `
@@ -2428,7 +2450,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   document.getElementById('shStats').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">Signal</div>
-      <div class="stat-val ${recType==='buy'?'g':recType==='sell'?'r':'a'}">${recType.toUpperCase()}</div>
+      <div class="stat-val ${finalRec==='buy'?'g':finalRec==='sell'?'r':'a'}">${finalRec.toUpperCase()}</div>
       <div class="stat-sub">${conf}% conf</div>
     </div>
     <div class="stat-card">
