@@ -1821,31 +1821,46 @@ function renderCards() {
 function getQuickRec(px, pv, vwap, sym) {
   if (!px) return { type:'hold', icon:'⏸', label:'HOLD', summary:'Loading data...' };
 
-  const cp = pv ? (px-pv)/pv*100 : 0;
-  // ma already computed from real bars above (sma50/sma200)
-  const ma = { ma50: sma50, ma200: sma200 };
-
-  // Cache for market hero to use
-  maCache[sym] = ma;
-  const a50  = px > ma.ma50;
-  const a200 = px > ma.ma200;
+  const cp    = pv ? (px-pv)/pv*100 : 0;
   const vwapA = px > (vwap||px)*1.001;
 
+  // Use cached MA values if available (populated after first full analysis)
+  const ma     = maCache[sym];
+  const a50    = ma ? px > ma.ma50  : null;
+  const a200   = ma ? px > ma.ma200 : null;
+
+  // Score based on available signals
   let score = 0;
-  if (a50)    score++;
-  if (a200)   score++;
-  if (vwapA)  score++;
-  if (cp > 0) score++;
+  if (cp > 0.5)   score++;          // positive day
+  if (cp > 1.5)   score++;          // strong positive day
+  if (vwapA)      score++;          // above VWAP
+  if (a50  === true)  score++;      // above 50-day (only if MA data available)
+  if (a200 === true)  score++;      // above 200-day
+  if (a50  === false) score--;      // below 50-day
+  if (a200 === false) score--;      // below 200-day
+  if (cp < -0.5)  score--;          // negative day
+  if (cp < -1.5)  score--;          // strong negative day
+
+  // Clamp score to a 0-5 range for threshold logic
+  const maxScore = ma ? 5 : 3;      // tighter range without MA data
+  const pct = (score + maxScore) / (maxScore * 2);
+
+  const recType = pct >= 0.65 ? 'buy' : pct <= 0.38 ? 'sell' : 'hold';
+
+  const trendNote = ma
+    ? (a50 && a200 ? 'above both key moving averages'
+      : !a50 && !a200 ? 'below both key moving averages'
+      : 'between key moving averages')
+    : (cp > 0 ? 'positive price action today' : 'negative price action today');
 
   const summaries = {
-    buy:  `Trading above key moving averages with ${vwapA?'bullish VWAP':'positive momentum'}. Technical structure supports upside.`,
-    hold: `Mixed signals — ${a200?'above':'below'} long-term trend. Waiting for clear directional confirmation.`,
-    sell: `Below key support levels. Short-term momentum is negative. Risk management suggests caution.`,
+    buy:  `${cp >= 0 ? 'Up ' + cp.toFixed(1) + '% today' : 'Holding'} with ${vwapA ? 'institutional support above VWAP' : 'bullish momentum'} and ${trendNote}. Technical structure favours upside.`,
+    hold: `Mixed signals — ${trendNote}. ${Math.abs(cp) < 0.5 ? 'Flat day with no clear direction.' : 'Waiting for a decisive break before committing.'} `,
+    sell: `${cp < 0 ? 'Down ' + Math.abs(cp).toFixed(1) + '% today' : 'Weak'} and ${trendNote}. Risk management suggests caution here.`,
   };
 
-  if (score >= 3) return { type:'buy',  icon:'▲', label:'BUY',  summary: summaries.buy  };
-  if (score >= 2) return { type:'hold', icon:'⏸', label:'HOLD', summary: summaries.hold };
-  return             { type:'sell', icon:'▼', label:'SELL', summary: summaries.sell };
+  const icons = { buy:'▲', hold:'⏸', sell:'▼' };
+  return { type: recType, icon: icons[recType], label: recType.toUpperCase(), summary: summaries[recType] };
 }
 
 // ── OPEN SHEET ────────────────────────────────────────────────────────────────
