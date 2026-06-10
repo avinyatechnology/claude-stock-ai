@@ -3167,19 +3167,74 @@ const STOCKS = [
 // ── SEARCH STATE ──────────────────────────────────────────────────────────────
 let searchHighlight = -1;
 let searchResults   = [];
-let searchSelected  = null; // ticker selected from dropdown
+let searchSelected  = null;
 let searchBlurTimer = null;
+let searchDebounce  = null;
+let searchLoading   = false;
+let lastQuery       = '';
 
 // ── SEARCH FUNCTIONS ──────────────────────────────────────────────────────────
 function onSearchInput(val) {
   const q = val.trim();
   document.getElementById('searchClear').style.display = q ? 'block' : 'none';
-  searchSelected = null; // reset selection on new typing
+  searchSelected = null;
+  lastQuery = q;
+
   if (q.length < 1) { hideDropdown(); return; }
-  const results = searchStocks(q);
-  searchResults = results;
-  searchHighlight = -1;
-  renderDropdown(results, q);
+
+  // Show local results instantly while API loads
+  const localResults = searchStocksLocal(q);
+  if (localResults.length) {
+    searchResults   = localResults;
+    searchHighlight = -1;
+    renderDropdown(localResults, q, true); // true = still loading
+  } else {
+    showSearchLoading(q);
+  }
+
+  // Debounce the live API call — wait 300ms after user stops typing
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => fetchSearchResults(q), 300);
+}
+
+async function fetchSearchResults(q) {
+  if (q !== lastQuery || q.length < 1) return; // stale query
+  try {
+    const data = await api(`/api/search?q=${encodeURIComponent(q)}`);
+    if (q !== lastQuery) return; // user typed more — discard
+    if (data?.results?.length) {
+      // Merge: live results first, then any local-only results not in live
+      const liveSyms = new Set(data.results.map(r=>r.t));
+      const localOnly = searchStocksLocal(q).filter(r=>!liveSyms.has(r.t));
+      searchResults   = [...data.results, ...localOnly].slice(0,12);
+      searchHighlight = -1;
+      renderDropdown(searchResults, q, false);
+    } else {
+      // No live results — keep local results if any, otherwise show empty
+      const local = searchStocksLocal(q);
+      searchResults   = local;
+      searchHighlight = -1;
+      renderDropdown(local, q, false);
+    }
+  } catch(e) {
+    // API failed — fall back to local-only results silently
+    const local = searchStocksLocal(q);
+    if (q === lastQuery) {
+      searchResults   = local;
+      searchHighlight = -1;
+      renderDropdown(local, q, false);
+    }
+  }
+}
+
+function showSearchLoading(q) {
+  const dd = document.getElementById('searchDropdown');
+  dd.style.display = 'block';
+  dd.innerHTML = `<div class="sd-empty" style="display:flex;align-items:center;gap:8px;justify-content:center">
+    <div class="spin" style="width:14px;height:14px;border-width:2px"></div>
+    <span>Searching all stocks for "${q}"...</span>
+  </div>`;
+  document.getElementById('searchWrap').classList.add('active');
 }
 
 function onSearchKey(e) {
@@ -3212,69 +3267,80 @@ function onSearchFocus() {
 }
 
 function onSearchBlur() {
-  // Delay hiding so tap on dropdown item registers first
   searchBlurTimer = setTimeout(hideDropdown, 200);
 }
 
-function searchStocks(q) {
+// Local database search (instant, no API)
+function searchStocksLocal(q) {
   const ql = q.toLowerCase();
   const qu = q.toUpperCase();
-  // Exact ticker match first, then starts-with ticker, then name match
   const exact    = STOCKS.filter(s => s.t === qu);
   const startTk  = STOCKS.filter(s => s.t !== qu && s.t.startsWith(qu));
   const startNm  = STOCKS.filter(s => !s.t.startsWith(qu) && s.n.toLowerCase().startsWith(ql));
-  const containNm= STOCKS.filter(s => !s.n.toLowerCase().startsWith(ql) && s.n.toLowerCase().includes(ql) && !s.t.startsWith(qu));
-  // Deduplicate
+  const containNm= STOCKS.filter(s => !s.t.startsWith(qu) && !s.n.toLowerCase().startsWith(ql) && s.n.toLowerCase().includes(ql));
   const seen = new Set();
   return [...exact,...startTk,...startNm,...containNm].filter(s=>{
     if(seen.has(s.t)) return false; seen.add(s.t); return true;
-  }).slice(0, 10);
+  }).slice(0,10);
 }
 
 function highlight(text, q) {
   const idx = text.toLowerCase().indexOf(q.toLowerCase());
   if (idx === -1) return text;
-  return text.slice(0,idx) + '<span class="sd-match">' + text.slice(idx,idx+q.length) + '</span>' + text.slice(idx+q.length);
+  return text.slice(0,idx)+'<span class="sd-match">'+text.slice(idx,idx+q.length)+'</span>'+text.slice(idx+q.length);
 }
 
-function renderDropdown(results, q) {
+function renderDropdown(results, q, isLoading) {
   const dd = document.getElementById('searchDropdown');
-  if (!results.length) {
+  document.getElementById('searchWrap').classList.add('active');
+
+  if (!results.length && !isLoading) {
     dd.style.display = 'block';
-    dd.innerHTML = `<div class="sd-empty">No results for "${q}" — try a different ticker or name</div>`;
-    document.getElementById('searchWrap').classList.add('active');
+    dd.innerHTML = `<div class="sd-empty">No results for "<strong>${q}</strong>"<br><span style="font-size:11px;color:var(--t3)">Try the exact ticker symbol — e.g. RRC, XOM, ORCL</span></div>`;
     return;
   }
-  dd.innerHTML = results.map((s,i) => `
+
+  const loadingRow = isLoading
+    ? `<div style="padding:8px 16px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t3);border-bottom:1px solid var(--border)">
+        <div class="spin" style="width:10px;height:10px;border-width:1.5px"></div>
+        Searching all stocks...
+      </div>` : '';
+
+  dd.innerHTML = loadingRow + results.map((s,i) => `
     <div class="sd-item${i===searchHighlight?' highlighted':''}"
-      onmousedown="selectStock(STOCKS.find(x=>x.t==='${s.t}'))"
-      ontouchstart="selectStock(STOCKS.find(x=>x.t==='${s.t}'))">
+      onmousedown="selectStockByTicker('${s.t}','${(s.n||'').replace(/'/g,"\\'")}','${s.s||''}')"
+      ontouchstart="selectStockByTicker('${s.t}','${(s.n||'').replace(/'/g,"\\'")}','${s.s||''}')">
       <div class="sd-ticker">${highlight(s.t, q.toUpperCase())}</div>
       <div class="sd-right">
-        <div class="sd-name">${highlight(s.n, q)}</div>
-        <div class="sd-meta">${s.s}</div>
+        <div class="sd-name">${highlight(s.n||s.t, q)}</div>
+        <div class="sd-meta">${s.s||'US Equity'}</div>
       </div>
       <div class="sd-arrow">→</div>
     </div>`).join('');
   dd.style.display = 'block';
-  document.getElementById('searchWrap').classList.add('active');
 }
 
 function highlightItem() {
   document.querySelectorAll('.sd-item').forEach((el,i) => {
     el.classList.toggle('highlighted', i === searchHighlight);
   });
+  // Scroll highlighted item into view
+  const highlighted = document.querySelector('.sd-item.highlighted');
+  if (highlighted) highlighted.scrollIntoView({block:'nearest'});
+}
+
+function selectStockByTicker(ticker, name, sector) {
+  clearTimeout(searchBlurTimer);
+  searchSelected = ticker;
+  document.getElementById('tickIn').value = ticker + (name ? ' — ' + name : '');
+  document.getElementById('searchClear').style.display = 'block';
+  hideDropdown();
+  openSheet(ticker);
 }
 
 function selectStock(stock) {
   if (!stock) return;
-  clearTimeout(searchBlurTimer);
-  searchSelected = stock.t;
-  document.getElementById('tickIn').value = stock.t + ' — ' + stock.n;
-  document.getElementById('searchClear').style.display = 'block';
-  hideDropdown();
-  // Auto-launch analysis
-  openSheet(stock.t);
+  selectStockByTicker(stock.t, stock.n, stock.s);
 }
 
 function hideDropdown() {
@@ -3286,16 +3352,16 @@ function clearSearch() {
   document.getElementById('tickIn').value = '';
   document.getElementById('searchClear').style.display = 'none';
   searchSelected = null;
+  lastQuery = '';
+  clearTimeout(searchDebounce);
   hideDropdown();
   document.getElementById('tickIn').focus();
 }
 
 async function doSearch() {
-  // Use selected ticker from dropdown, or parse raw input
   let t = searchSelected;
   if (!t) {
     const raw = document.getElementById('tickIn').value.trim();
-    // If they typed "AAPL — Apple Inc." style, extract ticker
     t = raw.includes(' — ') ? raw.split(' — ')[0].trim().toUpperCase() : raw.split(' ')[0].trim().toUpperCase();
   }
   if (!t) { toast('Please enter a stock ticker or company name'); return; }
@@ -3306,7 +3372,6 @@ async function doSearch() {
 function chipTap(el, sym) {
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   el.classList.add('on');
-  // Update search box to show the chip selection
   const stock = STOCKS.find(s=>s.t===sym);
   document.getElementById('tickIn').value = stock ? sym+' — '+stock.n : sym;
   document.getElementById('searchClear').style.display = 'block';

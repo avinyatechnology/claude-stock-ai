@@ -59,6 +59,50 @@ app.get('/api/watchlists',async(req,res)=>{try{const r=await fetch(`${TRADING_BA
 app.get('/api/portfolio/history',async(req,res)=>{try{const qs=new URLSearchParams(req.query).toString();const r=await fetch(`${TRADING_BASE}/v2/account/portfolio/history?${qs}`,{headers:alpacaHeaders()});res.status(r.status).json(await r.json());}catch(e){res.status(500).json({error:e.message});}});
 app.get('/api/asset/:symbol',async(req,res)=>{try{const r=await fetch(`${TRADING_BASE}/v2/assets/${req.params.symbol.toUpperCase()}`,{headers:alpacaHeaders()});res.status(r.status).json(await r.json());}catch(e){res.status(500).json({error:e.message});}});
 
+// ── ASSET SEARCH — live search across all tradeable US stocks ─────────────────
+// Alpaca /v2/assets returns all assets; we filter by query matching ticker or name
+app.get('/api/search', async(req,res)=>{
+  const q = (req.query.q||'').trim();
+  if (!q || q.length < 1) return res.json({results:[]});
+  try {
+    // Fetch all active US equities from Alpaca
+    // status=active, asset_class=us_equity
+    const r = await fetch(
+      `${TRADING_BASE}/v2/assets?status=active&asset_class=us_equity`,
+      { headers: alpacaHeaders() }
+    );
+    if (!r.ok) return res.status(r.status).json({results:[]});
+    const assets = await r.json();
+
+    const ql = q.toLowerCase();
+    const qu = q.toUpperCase();
+
+    // Score each asset for relevance
+    const scored = [];
+    for (const a of assets) {
+      if (!a.tradable || !a.symbol) continue;
+      const sym  = a.symbol.toUpperCase();
+      const name = (a.name||'').toLowerCase();
+      let score = 0;
+      if (sym === qu)                  score = 100; // exact ticker match
+      else if (sym.startsWith(qu))     score = 80;  // ticker starts with query
+      else if (name.startsWith(ql))    score = 60;  // name starts with query
+      else if (name.includes(' '+ql))  score = 40;  // word in name matches
+      else if (name.includes(ql))      score = 20;  // substring in name
+      else continue; // no match
+      scored.push({ t:sym, n:a.name||sym, s:a.exchange||'', score });
+    }
+
+    // Sort by score desc, then alphabetically by ticker
+    scored.sort((a,b) => b.score-a.score || a.t.localeCompare(b.t));
+
+    res.json({ results: scored.slice(0,12) });
+  } catch(e) {
+    console.error('Search error:', e.message);
+    res.status(500).json({results:[], error:e.message});
+  }
+});
+
 app.get('/api/news', async(req,res)=>{
   try{
     const symbols=req.query.symbols||'NVDA,AAPL,TSLA,META,MSFT,AMD,SPY';
