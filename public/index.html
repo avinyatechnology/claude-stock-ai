@@ -160,6 +160,88 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 }
 .scroll::-webkit-scrollbar { display: none; }
 
+/* ── SEARCH DROPDOWN ── */
+.search-dropdown {
+  position: relative;
+  background: var(--card);
+  border: 1.5px solid var(--navy);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -14px;
+  box-shadow: 0 8px 24px rgba(27,45,91,.15);
+  z-index: 100;
+}
+.search-dropdown::-webkit-scrollbar { display: none; }
+.search-inp-wrap.active {
+  border-color: var(--navy);
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+}
+.sd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sd-item:last-child { border-bottom: none; }
+.sd-item:active,
+.sd-item.highlighted { background: #EEF2FF; }
+.sd-ticker {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  min-width: 52px;
+  flex-shrink: 0;
+}
+.sd-right { flex: 1; min-width: 0; }
+.sd-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sd-meta {
+  font-size: 11px;
+  color: var(--t3);
+  font-family: var(--mono);
+  margin-top: 1px;
+}
+.sd-arrow {
+  font-size: 13px;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+.sd-match {
+  color: var(--navy);
+  font-weight: 700;
+}
+.sd-empty {
+  padding: 16px;
+  font-size: 13px;
+  color: var(--t2);
+  text-align: center;
+}
+.sd-section {
+  padding: 6px 16px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  font-family: var(--mono);
+  background: var(--card2);
+  border-bottom: 1px solid var(--border);
+}
+
 /* ── SEARCH CARD ── */
 .search-card {
   background: var(--card);
@@ -1061,6 +1143,28 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   margin-top: 16px;
   margin-bottom: 4px;
 }
+/* What is moving this stock card */
+.sum-what-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); border-left: 4px solid var(--navy);
+  padding: 16px; margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.sum-what-title { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.sum-what-icon { font-size: 18px; }
+.sum-what-title span:last-child { font-size:13px; font-weight:700; color:var(--navy); letter-spacing:.03em; text-transform:uppercase; }
+.sum-what-body { font-size:14px; color:var(--t1); line-height:1.75; }
+
+/* Buyer/Seller control card */
+.sum-control-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); padding: 16px;
+  margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.sum-control-title { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.sum-control-icon { font-size:16px; }
+.sum-control-title span:last-child { font-size:13px; font-weight:700; color:var(--tx); letter-spacing:.03em; text-transform:uppercase; }
+.sum-control-body { font-size:14px; color:var(--t1); line-height:1.75; }
+
 .disc-title {
   font-size: 11px; font-weight: 700; color: var(--amber);
   letter-spacing: .04em; margin-bottom: 8px;
@@ -1172,15 +1276,26 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
     <!-- ── SEARCH FIRST ── -->
     <div class="sec-title">Search & Analyze</div>
     <div class="search-card">
-      <div class="search-row">
-        <div class="search-inp-wrap">
-          <span style="font-size:14px;color:var(--t3)">🔍</span>
-          <input type="text" id="tickIn" placeholder="Enter ticker — AAPL, NVDA, TSLA..."
-            maxlength="6" oninput="this.value=this.value.toUpperCase()"
-            onkeydown="if(event.key==='Enter')doSearch()"/>
+      <div class="search-row" style="position:relative">
+        <div class="search-inp-wrap" id="searchWrap">
+          <span style="font-size:15px;color:var(--t3)" id="searchIcon">🔍</span>
+          <input type="text" id="tickIn"
+            placeholder="Search by name or ticker — Apple, NVDA, Tesla..."
+            maxlength="40"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            oninput="onSearchInput(this.value)"
+            onkeydown="onSearchKey(event)"
+            onfocus="onSearchFocus()"
+            onblur="onSearchBlur()"/>
+          <span id="searchClear" style="display:none;font-size:16px;color:var(--t3);cursor:pointer;padding:4px;flex-shrink:0" onclick="clearSearch()">✕</span>
         </div>
-        <button class="search-go" onclick="doSearch()">Analyze</button>
+        <button class="search-go" id="searchBtn" onclick="doSearch()">Analyze</button>
       </div>
+      <!-- DROPDOWN RESULTS -->
+      <div id="searchDropdown" class="search-dropdown" style="display:none"></div>
+      <!-- QUICK CHIPS -->
       <div class="chips" id="chips">
         <div class="chip on"  onclick="chipTap(this,'NVDA')">NVDA</div>
         <div class="chip" onclick="chipTap(this,'AAPL')">AAPL</div>
@@ -2307,7 +2422,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   // ── SUMMARY TAB — clean mobile redesign ─────────────────────────────────────
   document.getElementById('shAISummary').innerHTML = `
 
-    <!-- 1. VERDICT HERO — big, clear, immediate -->
+    <!-- 1. VERDICT HERO -->
     <div class="sum-hero">
       <div class="sum-hero-top">
         <div class="sum-hero-meta">AI Intelligence Summary · GPT-4o</div>
@@ -2324,20 +2439,40 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
       ${sm.marketRegime?`<div class="sum-regime">${sm.marketRegime}</div>`:''}
     </div>
 
-    <!-- 2. EARNINGS ALERT — only shown when relevant -->
+    <!-- 2. WHAT IS MOVING THIS STOCK — the most important section -->
+    ${sm.whatIsMovingThisStock?`
+    <div class="sum-what-card">
+      <div class="sum-what-title">
+        <span class="sum-what-icon">🔍</span>
+        <span>What Is Moving This Stock</span>
+      </div>
+      <div class="sum-what-body">${sm.whatIsMovingThisStock}</div>
+    </div>`:''}
+
+    <!-- 3. BUYER / SELLER CONTROL -->
+    ${sm.buyerSellerControl?`
+    <div class="sum-control-card">
+      <div class="sum-control-title">
+        <span class="sum-control-icon">${sm.buyerSellerControl.toLowerCase().includes('buyer')||sm.buyerSellerControl.toLowerCase().includes('accum')?'🟢':'🔴'}</span>
+        <span>Who Is In Control</span>
+      </div>
+      <div class="sum-control-body">${sm.buyerSellerControl}</div>
+    </div>`:''}
+
+    <!-- 4. EARNINGS WARNING -->
     ${sm.earningsNote?`
     <div class="sum-earnings-alert">
-      <div class="sum-earnings-title">Upcoming Earnings</div>
+      <div class="sum-earnings-title">⚠️ Earnings Event</div>
       <div class="sum-earnings-body">${sm.earningsNote}</div>
     </div>`:''}
 
-    <!-- 3. TODAY / THIS WEEK — stacked, full width, readable -->
+    <!-- 5. TODAY + THIS WEEK — stacked full width -->
     <div class="sum-outlook-card">
       <div class="sum-outlook-row">
         <div class="sum-outlook-icon">📅</div>
         <div class="sum-outlook-label">Today's Outlook</div>
       </div>
-      <div class="sum-outlook-text">${sm.todayOutlook||'Generating outlook...'}</div>
+      <div class="sum-outlook-text">${sm.todayOutlook||'Generating...'}</div>
     </div>
 
     <div class="sum-outlook-card">
@@ -2345,10 +2480,10 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
         <div class="sum-outlook-icon">📆</div>
         <div class="sum-outlook-label">This Week's Outlook</div>
       </div>
-      <div class="sum-outlook-text">${sm.weekOutlook||'Generating outlook...'}</div>
+      <div class="sum-outlook-text">${sm.weekOutlook||'Generating...'}</div>
     </div>
 
-    <!-- 4. KEY DRIVERS — clean list -->
+    <!-- 6. KEY DRIVERS -->
     ${drivers.length?`
     <div class="sum-list-card">
       <div class="sum-list-hd sum-list-hd-bull">
@@ -2364,7 +2499,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
       </div>
     </div>`:''}
 
-    <!-- 5. KEY RISKS -->
+    <!-- 7. KEY RISKS -->
     ${risks.length?`
     <div class="sum-list-card">
       <div class="sum-list-hd sum-list-hd-bear">
@@ -2380,7 +2515,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
       </div>
     </div>`:''}
 
-    <!-- 6. PRICE SCENARIOS — 3 stacked rows, highly readable -->
+    <!-- 8. PRICE SCENARIOS -->
     ${ps.bull||ps.neutral||ps.bear?`
     <div class="sum-scenarios-card">
       <div class="sum-scenarios-title">Price Scenarios</div>
@@ -2413,7 +2548,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
       </div>`:''}
     </div>`:''}
 
-    <!-- 7. KEY LEVELS — 2 columns max, stop reference full-width below -->
+    <!-- 9. KEY LEVELS -->
     ${kl.support||kl.resistance?`
     <div class="sum-levels-card">
       <div class="sum-levels-title">Key Price Levels</div>
@@ -2815,24 +2950,368 @@ function shTab(el, name) {
   if (pane) pane.classList.add('on');
 }
 
-function chipTap(el, sym) {
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
-  el.classList.add('on');
-  openSheet(sym);
+// ── STOCK DATABASE — 300+ stocks searchable by ticker or name ────────────────
+const STOCKS = [
+  // Mega-cap tech
+  {t:'AAPL',  n:'Apple Inc.',                    s:'Technology'},
+  {t:'MSFT',  n:'Microsoft Corporation',          s:'Technology'},
+  {t:'NVDA',  n:'NVIDIA Corporation',             s:'Semiconductors'},
+  {t:'GOOGL', n:'Alphabet Inc. (Google)',          s:'Technology'},
+  {t:'GOOG',  n:'Alphabet Inc. Class C',           s:'Technology'},
+  {t:'META',  n:'Meta Platforms Inc.',             s:'Technology'},
+  {t:'AMZN',  n:'Amazon.com Inc.',                s:'Consumer'},
+  {t:'TSLA',  n:'Tesla Inc.',                      s:'Automotive'},
+  {t:'NFLX',  n:'Netflix Inc.',                    s:'Media'},
+  {t:'ADBE',  n:'Adobe Inc.',                      s:'Technology'},
+  // Semiconductors
+  {t:'AMD',   n:'Advanced Micro Devices',          s:'Semiconductors'},
+  {t:'INTC',  n:'Intel Corporation',               s:'Semiconductors'},
+  {t:'QCOM',  n:'Qualcomm Inc.',                   s:'Semiconductors'},
+  {t:'AVGO',  n:'Broadcom Inc.',                   s:'Semiconductors'},
+  {t:'TXN',   n:'Texas Instruments',               s:'Semiconductors'},
+  {t:'MU',    n:'Micron Technology',               s:'Semiconductors'},
+  {t:'AMAT',  n:'Applied Materials',               s:'Semiconductors'},
+  {t:'LRCX',  n:'Lam Research',                    s:'Semiconductors'},
+  {t:'KLAC',  n:'KLA Corporation',                 s:'Semiconductors'},
+  {t:'MRVL',  n:'Marvell Technology',              s:'Semiconductors'},
+  {t:'ON',    n:'ON Semiconductor',                s:'Semiconductors'},
+  {t:'WOLF',  n:'Wolfspeed Inc.',                  s:'Semiconductors'},
+  // Enterprise software & cloud
+  {t:'ORCL',  n:'Oracle Corporation',              s:'Software'},
+  {t:'CRM',   n:'Salesforce Inc.',                 s:'Software'},
+  {t:'NOW',   n:'ServiceNow Inc.',                 s:'Software'},
+  {t:'SNOW',  n:'Snowflake Inc.',                  s:'Software'},
+  {t:'PLTR',  n:'Palantir Technologies',           s:'Software'},
+  {t:'WDAY',  n:'Workday Inc.',                    s:'Software'},
+  {t:'TEAM',  n:'Atlassian Corporation',           s:'Software'},
+  {t:'DDOG',  n:'Datadog Inc.',                    s:'Software'},
+  {t:'MDB',   n:'MongoDB Inc.',                    s:'Software'},
+  {t:'CRWD',  n:'CrowdStrike Holdings',            s:'Cybersecurity'},
+  {t:'PANW',  n:'Palo Alto Networks',              s:'Cybersecurity'},
+  {t:'FTNT',  n:'Fortinet Inc.',                   s:'Cybersecurity'},
+  {t:'ZS',    n:'Zscaler Inc.',                    s:'Cybersecurity'},
+  {t:'S',     n:'SentinelOne Inc.',                s:'Cybersecurity'},
+  {t:'OKTA',  n:'Okta Inc.',                       s:'Cybersecurity'},
+  {t:'NET',   n:'Cloudflare Inc.',                 s:'Technology'},
+  {t:'TWLO',  n:'Twilio Inc.',                     s:'Technology'},
+  {t:'SHOP',  n:'Shopify Inc.',                    s:'E-Commerce'},
+  {t:'BILL',  n:'BILL Holdings Inc.',              s:'Fintech'},
+  // AI / Robotics
+  {t:'AI',    n:'C3.ai Inc.',                      s:'AI'},
+  {t:'BBAI',  n:'BigBear.ai Holdings',             s:'AI'},
+  {t:'SOUN',  n:'SoundHound AI Inc.',              s:'AI'},
+  {t:'RXRX',  n:'Recursion Pharmaceuticals',       s:'AI/Biotech'},
+  {t:'UPST',  n:'Upstart Holdings',                s:'AI/Fintech'},
+  // Financials
+  {t:'JPM',   n:'JPMorgan Chase & Co.',            s:'Banking'},
+  {t:'BAC',   n:'Bank of America',                 s:'Banking'},
+  {t:'WFC',   n:'Wells Fargo & Company',           s:'Banking'},
+  {t:'GS',    n:'Goldman Sachs Group',             s:'Banking'},
+  {t:'MS',    n:'Morgan Stanley',                  s:'Banking'},
+  {t:'C',     n:'Citigroup Inc.',                  s:'Banking'},
+  {t:'USB',   n:'U.S. Bancorp',                    s:'Banking'},
+  {t:'BRK.B', n:'Berkshire Hathaway B',            s:'Financials'},
+  {t:'BLK',   n:'BlackRock Inc.',                  s:'Asset Management'},
+  {t:'V',     n:'Visa Inc.',                       s:'Payments'},
+  {t:'MA',    n:'Mastercard Inc.',                 s:'Payments'},
+  {t:'PYPL',  n:'PayPal Holdings',                 s:'Payments'},
+  {t:'SQ',    n:'Block Inc.',                      s:'Fintech'},
+  {t:'AFRM',  n:'Affirm Holdings',                 s:'Fintech'},
+  {t:'COIN',  n:'Coinbase Global',                 s:'Crypto'},
+  {t:'HOOD',  n:'Robinhood Markets',               s:'Fintech'},
+  {t:'SOFI',  n:'SoFi Technologies',               s:'Fintech'},
+  {t:'NU',    n:'Nu Holdings (Nubank)',             s:'Fintech'},
+  {t:'SCHW',  n:'Charles Schwab',                  s:'Brokerage'},
+  {t:'AXP',   n:'American Express',                s:'Financials'},
+  {t:'SPGI',  n:'S&P Global Inc.',                 s:'Financials'},
+  // Healthcare & Biotech
+  {t:'JNJ',   n:'Johnson & Johnson',               s:'Healthcare'},
+  {t:'UNH',   n:'UnitedHealth Group',              s:'Healthcare'},
+  {t:'PFE',   n:'Pfizer Inc.',                     s:'Pharma'},
+  {t:'MRK',   n:'Merck & Co.',                     s:'Pharma'},
+  {t:'ABBV',  n:'AbbVie Inc.',                     s:'Pharma'},
+  {t:'LLY',   n:'Eli Lilly and Company',           s:'Pharma'},
+  {t:'BMY',   n:'Bristol-Myers Squibb',            s:'Pharma'},
+  {t:'GILD',  n:'Gilead Sciences',                 s:'Biotech'},
+  {t:'AMGN',  n:'Amgen Inc.',                      s:'Biotech'},
+  {t:'REGN',  n:'Regeneron Pharmaceuticals',       s:'Biotech'},
+  {t:'MRNA',  n:'Moderna Inc.',                    s:'Biotech'},
+  {t:'BNTX',  n:'BioNTech SE',                     s:'Biotech'},
+  {t:'NVAX',  n:'Novavax Inc.',                    s:'Biotech'},
+  {t:'ISRG',  n:'Intuitive Surgical',              s:'Medical Devices'},
+  {t:'ABT',   n:'Abbott Laboratories',             s:'Medical Devices'},
+  {t:'MDT',   n:'Medtronic plc',                   s:'Medical Devices'},
+  {t:'TMO',   n:'Thermo Fisher Scientific',        s:'Life Sciences'},
+  {t:'DHR',   n:'Danaher Corporation',             s:'Life Sciences'},
+  {t:'CVS',   n:'CVS Health Corporation',          s:'Healthcare'},
+  // Consumer
+  {t:'AMZN',  n:'Amazon.com Inc.',                s:'E-Commerce'},
+  {t:'WMT',   n:'Walmart Inc.',                    s:'Retail'},
+  {t:'COST',  n:'Costco Wholesale',                s:'Retail'},
+  {t:'TGT',   n:'Target Corporation',              s:'Retail'},
+  {t:'HD',    n:'Home Depot Inc.',                 s:'Retail'},
+  {t:'LOW',   n:'Lowe\'s Companies',               s:'Retail'},
+  {t:'BABA',  n:'Alibaba Group',                   s:'E-Commerce'},
+  {t:'JD',    n:'JD.com Inc.',                     s:'E-Commerce'},
+  {t:'PDD',   n:'PDD Holdings (Temu/Pinduoduo)',   s:'E-Commerce'},
+  {t:'MCD',   n:'McDonald\'s Corporation',         s:'Restaurants'},
+  {t:'SBUX',  n:'Starbucks Corporation',           s:'Restaurants'},
+  {t:'CMG',   n:'Chipotle Mexican Grill',          s:'Restaurants'},
+  {t:'YUM',   n:'Yum! Brands Inc.',                s:'Restaurants'},
+  {t:'NKE',   n:'Nike Inc.',                       s:'Consumer'},
+  {t:'LULU',  n:'lululemon athletica',             s:'Consumer'},
+  // EV & Autos
+  {t:'TSLA',  n:'Tesla Inc.',                      s:'EV'},
+  {t:'RIVN',  n:'Rivian Automotive',               s:'EV'},
+  {t:'LCID',  n:'Lucid Group',                     s:'EV'},
+  {t:'NIO',   n:'NIO Inc.',                        s:'EV'},
+  {t:'LI',    n:'Li Auto Inc.',                    s:'EV'},
+  {t:'XPEV',  n:'XPeng Inc.',                      s:'EV'},
+  {t:'F',     n:'Ford Motor Company',              s:'Automotive'},
+  {t:'GM',    n:'General Motors',                  s:'Automotive'},
+  {t:'TM',    n:'Toyota Motor Corporation',        s:'Automotive'},
+  // Energy
+  {t:'XOM',   n:'ExxonMobil Corporation',          s:'Energy'},
+  {t:'CVX',   n:'Chevron Corporation',             s:'Energy'},
+  {t:'COP',   n:'ConocoPhillips',                  s:'Energy'},
+  {t:'SLB',   n:'SLB (Schlumberger)',              s:'Energy Services'},
+  {t:'OXY',   n:'Occidental Petroleum',            s:'Energy'},
+  {t:'NEE',   n:'NextEra Energy',                  s:'Utilities'},
+  {t:'ENPH',  n:'Enphase Energy',                  s:'Clean Energy'},
+  {t:'FSLR',  n:'First Solar Inc.',                s:'Clean Energy'},
+  {t:'PLUG',  n:'Plug Power Inc.',                 s:'Clean Energy'},
+  // ETFs
+  {t:'SPY',   n:'SPDR S&P 500 ETF',                s:'ETF'},
+  {t:'QQQ',   n:'Invesco NASDAQ 100 ETF',          s:'ETF'},
+  {t:'IWM',   n:'iShares Russell 2000 ETF',        s:'ETF'},
+  {t:'DIA',   n:'SPDR Dow Jones ETF',              s:'ETF'},
+  {t:'VTI',   n:'Vanguard Total Market ETF',       s:'ETF'},
+  {t:'VOO',   n:'Vanguard S&P 500 ETF',            s:'ETF'},
+  {t:'ARKK',  n:'ARK Innovation ETF',              s:'ETF'},
+  {t:'SOXX',  n:'iShares Semiconductor ETF',       s:'ETF'},
+  {t:'XLK',   n:'Technology Select Sector ETF',    s:'ETF'},
+  {t:'XLF',   n:'Financial Select Sector ETF',     s:'ETF'},
+  {t:'XLE',   n:'Energy Select Sector ETF',        s:'ETF'},
+  {t:'GLD',   n:'SPDR Gold Shares ETF',            s:'ETF'},
+  {t:'SLV',   n:'iShares Silver Trust ETF',        s:'ETF'},
+  {t:'TLT',   n:'iShares 20+ Year Treasury ETF',  s:'ETF'},
+  {t:'VIXY',  n:'ProShares VIX Short-Term ETF',    s:'ETF'},
+  // Communication & Media
+  {t:'DIS',   n:'Walt Disney Company',             s:'Media'},
+  {t:'CMCSA', n:'Comcast Corporation',             s:'Media'},
+  {t:'T',     n:'AT&T Inc.',                       s:'Telecom'},
+  {t:'VZ',    n:'Verizon Communications',          s:'Telecom'},
+  {t:'TMUS',  n:'T-Mobile US Inc.',                s:'Telecom'},
+  {t:'SNAP',  n:'Snap Inc.',                       s:'Social Media'},
+  {t:'PINS',  n:'Pinterest Inc.',                  s:'Social Media'},
+  {t:'RDDT',  n:'Reddit Inc.',                     s:'Social Media'},
+  {t:'SPOT',  n:'Spotify Technology',              s:'Media'},
+  {t:'RBLX',  n:'Roblox Corporation',              s:'Gaming'},
+  {t:'EA',    n:'Electronic Arts Inc.',            s:'Gaming'},
+  {t:'TTWO',  n:'Take-Two Interactive',            s:'Gaming'},
+  {t:'ATVI',  n:'Activision Blizzard',             s:'Gaming'},
+  // Real Estate
+  {t:'AMT',   n:'American Tower REIT',             s:'REIT'},
+  {t:'PLD',   n:'Prologis Inc.',                   s:'REIT'},
+  {t:'EQIX',  n:'Equinix Inc.',                    s:'Data Center REIT'},
+  {t:'SPG',   n:'Simon Property Group',            s:'REIT'},
+  // Industrials & Aerospace
+  {t:'BA',    n:'Boeing Company',                  s:'Aerospace'},
+  {t:'LMT',   n:'Lockheed Martin',                 s:'Defense'},
+  {t:'RTX',   n:'RTX Corporation (Raytheon)',      s:'Defense'},
+  {t:'GE',    n:'GE Aerospace',                    s:'Aerospace'},
+  {t:'CAT',   n:'Caterpillar Inc.',                s:'Industrials'},
+  {t:'DE',    n:'Deere & Company',                 s:'Industrials'},
+  {t:'UPS',   n:'United Parcel Service',           s:'Logistics'},
+  {t:'FDX',   n:'FedEx Corporation',               s:'Logistics'},
+  {t:'DAL',   n:'Delta Air Lines',                 s:'Airlines'},
+  {t:'UAL',   n:'United Airlines Holdings',        s:'Airlines'},
+  {t:'AAL',   n:'American Airlines Group',         s:'Airlines'},
+  {t:'LUV',   n:'Southwest Airlines',              s:'Airlines'},
+  {t:'UBER',  n:'Uber Technologies',               s:'Mobility'},
+  {t:'LYFT',  n:'Lyft Inc.',                       s:'Mobility'},
+  {t:'ABNB',  n:'Airbnb Inc.',                     s:'Travel'},
+  {t:'BKNG',  n:'Booking Holdings',                s:'Travel'},
+  {t:'MAR',   n:'Marriott International',          s:'Hotels'},
+  {t:'HLT',   n:'Hilton Worldwide Holdings',       s:'Hotels'},
+  // Additional popular
+  {t:'ZM',    n:'Zoom Video Communications',       s:'Technology'},
+  {t:'DOCU',  n:'DocuSign Inc.',                   s:'Technology'},
+  {t:'PATH',  n:'UiPath Inc.',                     s:'Automation'},
+  {t:'RDFN',  n:'Redfin Corporation',              s:'Real Estate'},
+  {t:'Z',     n:'Zillow Group',                    s:'Real Estate'},
+  {t:'OPEN',  n:'Opendoor Technologies',           s:'Real Estate'},
+  {t:'DASH',  n:'DoorDash Inc.',                   s:'Food Delivery'},
+  {t:'GRAB',  n:'Grab Holdings',                   s:'Mobility'},
+  {t:'SE',    n:'Sea Limited',                     s:'E-Commerce'},
+  {t:'MELI',  n:'MercadoLibre Inc.',               s:'E-Commerce'},
+  {t:'CPNG',  n:'Coupang Inc.',                    s:'E-Commerce'},
+  {t:'DKNG',  n:'DraftKings Inc.',                 s:'Gaming'},
+  {t:'PENN',  n:'PENN Entertainment',              s:'Gaming'},
+  {t:'MGM',   n:'MGM Resorts International',       s:'Hotels/Gaming'},
+  {t:'WYNN',  n:'Wynn Resorts',                    s:'Hotels/Gaming'},
+  {t:'CVNA',  n:'Carvana Co.',                     s:'Automotive'},
+  {t:'KMX',   n:'CarMax Inc.',                     s:'Automotive'},
+  {t:'GNRC',  n:'Generac Holdings',                s:'Industrials'},
+  {t:'SMCI',  n:'Super Micro Computer',            s:'Technology'},
+  {t:'ARM',   n:'Arm Holdings plc',                s:'Semiconductors'},
+  {t:'ASML',  n:'ASML Holding N.V.',               s:'Semiconductors'},
+  {t:'TSM',   n:'Taiwan Semiconductor (TSMC)',     s:'Semiconductors'},
+  {t:'SAP',   n:'SAP SE',                          s:'Software'},
+  {t:'INTU',  n:'Intuit Inc.',                     s:'Software'},
+  {t:'ANSS',  n:'ANSYS Inc.',                      s:'Software'},
+  {t:'CDNS',  n:'Cadence Design Systems',          s:'Software'},
+  {t:'SNPS',  n:'Synopsys Inc.',                   s:'Software'},
+];
+
+// ── SEARCH STATE ──────────────────────────────────────────────────────────────
+let searchHighlight = -1;
+let searchResults   = [];
+let searchSelected  = null; // ticker selected from dropdown
+let searchBlurTimer = null;
+
+// ── SEARCH FUNCTIONS ──────────────────────────────────────────────────────────
+function onSearchInput(val) {
+  const q = val.trim();
+  document.getElementById('searchClear').style.display = q ? 'block' : 'none';
+  searchSelected = null; // reset selection on new typing
+  if (q.length < 1) { hideDropdown(); return; }
+  const results = searchStocks(q);
+  searchResults = results;
+  searchHighlight = -1;
+  renderDropdown(results, q);
+}
+
+function onSearchKey(e) {
+  const dd = document.getElementById('searchDropdown');
+  const visible = dd.style.display !== 'none';
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    searchHighlight = Math.min(searchHighlight+1, searchResults.length-1);
+    highlightItem();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    searchHighlight = Math.max(searchHighlight-1, -1);
+    highlightItem();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (visible && searchHighlight >= 0 && searchResults[searchHighlight]) {
+      selectStock(searchResults[searchHighlight]);
+    } else {
+      doSearch();
+    }
+  } else if (e.key === 'Escape') {
+    hideDropdown();
+  }
+}
+
+function onSearchFocus() {
+  clearTimeout(searchBlurTimer);
+  const val = document.getElementById('tickIn').value.trim();
+  if (val.length >= 1) onSearchInput(val);
+}
+
+function onSearchBlur() {
+  // Delay hiding so tap on dropdown item registers first
+  searchBlurTimer = setTimeout(hideDropdown, 200);
+}
+
+function searchStocks(q) {
+  const ql = q.toLowerCase();
+  const qu = q.toUpperCase();
+  // Exact ticker match first, then starts-with ticker, then name match
+  const exact    = STOCKS.filter(s => s.t === qu);
+  const startTk  = STOCKS.filter(s => s.t !== qu && s.t.startsWith(qu));
+  const startNm  = STOCKS.filter(s => !s.t.startsWith(qu) && s.n.toLowerCase().startsWith(ql));
+  const containNm= STOCKS.filter(s => !s.n.toLowerCase().startsWith(ql) && s.n.toLowerCase().includes(ql) && !s.t.startsWith(qu));
+  // Deduplicate
+  const seen = new Set();
+  return [...exact,...startTk,...startNm,...containNm].filter(s=>{
+    if(seen.has(s.t)) return false; seen.add(s.t); return true;
+  }).slice(0, 10);
+}
+
+function highlight(text, q) {
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return text;
+  return text.slice(0,idx) + '<span class="sd-match">' + text.slice(idx,idx+q.length) + '</span>' + text.slice(idx+q.length);
+}
+
+function renderDropdown(results, q) {
+  const dd = document.getElementById('searchDropdown');
+  if (!results.length) {
+    dd.style.display = 'block';
+    dd.innerHTML = `<div class="sd-empty">No results for "${q}" — try a different ticker or name</div>`;
+    document.getElementById('searchWrap').classList.add('active');
+    return;
+  }
+  dd.innerHTML = results.map((s,i) => `
+    <div class="sd-item${i===searchHighlight?' highlighted':''}"
+      onmousedown="selectStock(STOCKS.find(x=>x.t==='${s.t}'))"
+      ontouchstart="selectStock(STOCKS.find(x=>x.t==='${s.t}'))">
+      <div class="sd-ticker">${highlight(s.t, q.toUpperCase())}</div>
+      <div class="sd-right">
+        <div class="sd-name">${highlight(s.n, q)}</div>
+        <div class="sd-meta">${s.s}</div>
+      </div>
+      <div class="sd-arrow">→</div>
+    </div>`).join('');
+  dd.style.display = 'block';
+  document.getElementById('searchWrap').classList.add('active');
+}
+
+function highlightItem() {
+  document.querySelectorAll('.sd-item').forEach((el,i) => {
+    el.classList.toggle('highlighted', i === searchHighlight);
+  });
+}
+
+function selectStock(stock) {
+  if (!stock) return;
+  clearTimeout(searchBlurTimer);
+  searchSelected = stock.t;
+  document.getElementById('tickIn').value = stock.t + ' — ' + stock.n;
+  document.getElementById('searchClear').style.display = 'block';
+  hideDropdown();
+  // Auto-launch analysis
+  openSheet(stock.t);
+}
+
+function hideDropdown() {
+  document.getElementById('searchDropdown').style.display = 'none';
+  document.getElementById('searchWrap').classList.remove('active');
+}
+
+function clearSearch() {
+  document.getElementById('tickIn').value = '';
+  document.getElementById('searchClear').style.display = 'none';
+  searchSelected = null;
+  hideDropdown();
+  document.getElementById('tickIn').focus();
 }
 
 async function doSearch() {
-  const t = document.getElementById('tickIn').value.trim().toUpperCase();
-  if (!t) return;
-  if (!S.tickers.includes(t)) {
-    S.tickers.unshift(t);
-    const el = document.createElement('div');
-    el.className = 'chip on';
-    el.onclick = () => chipTap(el, t);
-    el.textContent = t;
-    document.getElementById('chips').prepend(el);
+  // Use selected ticker from dropdown, or parse raw input
+  let t = searchSelected;
+  if (!t) {
+    const raw = document.getElementById('tickIn').value.trim();
+    // If they typed "AAPL — Apple Inc." style, extract ticker
+    t = raw.includes(' — ') ? raw.split(' — ')[0].trim().toUpperCase() : raw.split(' ')[0].trim().toUpperCase();
   }
+  if (!t) { toast('Please enter a stock ticker or company name'); return; }
+  hideDropdown();
   openSheet(t);
+}
+
+function chipTap(el, sym) {
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  // Update search box to show the chip selection
+  const stock = STOCKS.find(s=>s.t===sym);
+  document.getElementById('tickIn').value = stock ? sym+' — '+stock.n : sym;
+  document.getElementById('searchClear').style.display = 'block';
+  searchSelected = sym;
+  openSheet(sym);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
