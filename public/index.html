@@ -361,116 +361,88 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 .sc-spark { height: 32px; margin-top: 10px; }
 .sc-spark svg { width: 100%; height: 100%; }
 
-/* ── BOTTOM NAV (4 tabs) ── */
+/* ══════════════════════════════════════════════════════════════
+   BOTTOM NAV — 4 tabs, always visible at bottom
+══════════════════════════════════════════════════════════════ */
 .bnav {
   position: fixed; bottom: 0; left: 50%;
   transform: translateX(-50%);
   width: var(--w);
   background: var(--card);
-  border-top: 1px solid var(--border);
-  display: flex; z-index: 50;
+  border-top: 1.5px solid var(--border);
+  display: flex;
+  z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -4px 20px rgba(27,45,91,.08);
+  box-shadow: 0 -4px 24px rgba(27,45,91,.10);
 }
 @media(max-width:420px){ .bnav { width:100%; left:0; transform:none; } }
+
 .bni {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: 10px 0 12px; cursor: pointer; gap: 3px;
-  font-size: 10px; font-weight: 700; letter-spacing: .03em;
-  text-transform: uppercase; color: var(--t3);
-  transition: all .15s; font-family: var(--sans);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 9px 0 11px;
+  cursor: pointer;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--t3);
+  transition: color .15s;
+  font-family: var(--sans);
   -webkit-tap-highlight-color: transparent;
+  position: relative;
 }
 .bni.on { color: var(--navy); }
-.bni.on .bni-ic { filter: drop-shadow(0 2px 6px rgba(27,45,91,.25)); }
-.bni:active { transform: scale(.88); }
-.bni-ic { font-size: 20px; }
-/* Badge on analysis tabs when stock is loaded */
-.bni.has-data { color: var(--t2); }
-.bni.has-data.on { color: var(--navy); }
-/* Small dot indicator on analysis tabs when data is loaded */
-.bni.has-data .bni-ic::after {
+.bni:active { opacity: .6; }
+.bni-ic { font-size: 22px; line-height: 1; }
+
+/* Green dot on analysis tabs once stock is loaded */
+.bni.has-data::after {
   content: '';
-  display: inline-block;
-  width: 5px; height: 5px;
+  position: absolute;
+  top: 7px; right: calc(50% - 16px);
+  width: 6px; height: 6px;
   background: var(--green);
   border-radius: 50%;
-  margin-left: 2px;
-  vertical-align: top;
-  margin-top: 2px;
+  border: 1.5px solid var(--card);
 }
 
-/* ── FULL-SCREEN PAGES ── */
+/* ══════════════════════════════════════════════════════════════
+   APP LAYOUT — all views live inside .app which fills the screen
+   The visible area is: sbar → header → content → bnav
+══════════════════════════════════════════════════════════════ */
+
+/* The markets view is already .scroll inside .app — no changes needed */
+
+/* Full-screen analysis pages sit inside .app, stacked over markets */
 .pg-screen {
-  position: fixed;
-  top: 0; left: 50%; bottom: 0;
-  width: var(--w);
-  transform: translateX(-50%);
+  /* Fills .app — positioned to fill from top of .app */
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   z-index: 10;
   overflow: hidden;
 }
-@media(max-width:420px){ .pg-screen { width:100%; left:0; transform:none; } }
 
-.pg-scroll {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 14px 100px;
-}
-.pg-scroll::-webkit-scrollbar { display: none; }
-
-/* Stock hero strip — fixed inside each pg-screen */
-#stockHero {
-  position: fixed;
-  top: 0; left: 50%;
-  width: var(--w);
-  transform: translateX(-50%);
-  z-index: 20;
-  pointer-events: none;
-}
-@media(max-width:420px){ #stockHero { width:100%; left:0; transform:none; } }
-#stockHeroInner {
-  margin-top: 100px; /* below sbar + header */
-  pointer-events: all;
-}
-.pg-tab-strip {
-  display: flex;
+/* Stock hero — part of the pg-screen flex column, NOT fixed */
+.stock-hero-bar {
   background: var(--navy);
-  border-bottom: 2px solid rgba(255,255,255,.1);
+  flex-shrink: 0;
 }
-.pg-tab {
-  flex: 1;
-  text-align: center;
-  padding: 9px 0 8px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.4);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all .15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.pg-tab.on { color: #fff; border-bottom-color: var(--green); }
-.pg-tab:active { opacity: .7; }
-
 .pg-hero {
-  background: var(--navy);
-  padding: 10px 16px 12px;
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 2px solid rgba(255,255,255,.08);
-  pointer-events: all;
+  padding: 12px 16px 10px;
 }
 .pg-hero-left { flex: 1; min-width: 0; }
 .pg-sym {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: #fff;
   letter-spacing: -.2px;
@@ -483,11 +455,12 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 200px;
 }
-.pg-hero-right { text-align: right; }
+.pg-hero-right { text-align: right; flex-shrink: 0; }
 .pg-px {
   font-family: var(--mono);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #fff;
   line-height: 1.1;
@@ -498,37 +471,80 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   font-weight: 600;
   margin-top: 2px;
 }
-.pg-ch.up { color: var(--green-l); }
+.pg-ch.up { color: #5EE87A; }
 .pg-ch.dn { color: #FC8181; }
 .pg-rec {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
+  padding: 5px 11px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
 }
-.pg-rec.buy      { background: var(--green-bg); color: var(--green-l); border: 1px solid rgba(45,198,83,.3); }
-.pg-rec.hold     { background: var(--amber-bg); color: #FFB020;         border: 1px solid rgba(217,119,6,.3); }
-.pg-rec.sell     { background: var(--red-bg);   color: #FC8181;         border: 1px solid rgba(229,62,62,.3); }
-.pg-rec.analyzing{ background: rgba(255,255,255,.08); color:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.12); }
+.pg-rec.buy      { background: rgba(45,198,83,.2);  color: #5EE87A; border: 1px solid rgba(45,198,83,.3); }
+.pg-rec.hold     { background: rgba(217,119,6,.2);  color: #FFB020; border: 1px solid rgba(217,119,6,.3); }
+.pg-rec.sell     { background: rgba(229,62,62,.2);  color: #FC8181; border: 1px solid rgba(229,62,62,.3); }
+.pg-rec.analyzing{ background: rgba(255,255,255,.08); color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.12); }
 
-/* Hero height — used to push page content below */
-.pg-hero-spacer { height: 170px; flex-shrink: 0; }
-
-/* Empty state shown on analysis tabs before search */
-.pg-empty {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  flex: 1; padding: 40px 24px;
-  text-align: center;
+/* Confidence bar row */
+.pg-conf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 8px;
 }
-.pg-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
-.pg-empty-title { font-size: 17px; font-weight: 700; color: var(--t2); margin-bottom: 8px; }
-.pg-empty-sub { font-size: 13px; color: var(--t3); line-height: 1.6; }
+.pg-conf-track {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pg-conf-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .6s;
+  width: 0%;
+}
+.pg-conf-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.45);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+/* Tab strip — Summary | Outlook | Indicators */
+.pg-tab-strip {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.pg-tab {
+  flex: 1;
+  text-align: center;
+  padding: 9px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pg-tab.on { color: #fff; border-bottom-color: var(--green); }
+.pg-tab:active { opacity: .6; }
+
+/* Scrollable content area — fills remaining space */
+.pg-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 14px 90px;
+}
+.pg-scroll::-webkit-scrollbar { display: none; }
 
 /* Loading state inside pages */
 .pg-loading {
@@ -536,12 +552,12 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 20px;
-  gap: 12px;
+  padding: 60px 24px;
+  gap: 14px;
   text-align: center;
 }
-.pg-loading-title { font-size: 15px; font-weight: 700; color: var(--tx); margin-bottom: 4px; }
-.pg-loading-sub { font-size: 12px; color: var(--t2); line-height: 1.65; }
+.pg-loading-title { font-size: 15px; font-weight: 700; color: var(--tx); }
+.pg-loading-sub   { font-size: 13px; color: var(--t2); line-height: 1.65; }
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: 60px 24px; gap: 14px; text-align: center;
@@ -1314,6 +1330,1464 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   border-top: 1px solid var(--border);
   text-align: center; letter-spacing: .04em;
 }
+
+/* — merged — */
+
+:root {
+  /* GFinHub brand exact colors */
+  --navy:       #1B2D5B;
+  --navy-d:     #0F1E40;
+  --navy-l:     #243672;
+  --green:      #2DC653;
+  --green-d:    #1E9E3E;
+  --green-l:    #3DDC68;
+  --green-bg:   rgba(45,198,83,.08);
+  --green-brd:  rgba(45,198,83,.18);
+  --red:        #E53E3E;
+  --red-bg:     rgba(229,62,62,.08);
+  --red-brd:    rgba(229,62,62,.18);
+  --amber:      #D97706;
+  --amber-bg:   rgba(217,119,6,.08);
+  --amber-brd:  rgba(217,119,6,.18);
+
+  /* Surface system */
+  --bg:         #F0F2F7;
+  --card:       #FFFFFF;
+  --card2:      #F7F9FC;
+  --border:     #E2E8F0;
+  --border2:    #CBD5E0;
+
+  /* Text */
+  --tx:         #0F1E40;
+  --t1:         #4A5568;
+  --t2:         #718096;
+  --t3:         #A0AEC0;
+
+  /* Fonts */
+  --sans:       'Plus Jakarta Sans', sans-serif;
+  --mono:       'JetBrains Mono', monospace;
+
+  --r:          14px;
+  --r-sm:       9px;
+  --w:          390px;
+  --shadow:     0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(27,45,91,.06);
+  --shadow-lg:  0 8px 32px rgba(27,45,91,.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #D8DCE8; }
+body { font-family: var(--sans); display: flex; justify-content: center; }
+
+/* ── APP SHELL ── */
+.app {
+  width: var(--w);
+  height: 100vh; height: 100dvh;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+@media(max-width:420px){ .app { width: 100vw; } }
+
+/* ── STATUS BAR ── */
+.sbar {
+  background: var(--navy);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 18px 6px;
+  flex-shrink: 0;
+}
+.sbar-time { font-family: var(--mono); font-size: 12px; font-weight: 600; color: rgba(255,255,255,.9); }
+.sbar-r { display: flex; gap: 5px; align-items: center; font-size: 10px; color: rgba(255,255,255,.5); }
+
+/* ── HEADER ── */
+.header {
+  background: #FFFFFF;
+  padding: 10px 16px 12px;
+  flex-shrink: 0;
+  position: relative;
+  border-bottom: 3px solid var(--navy);
+  box-shadow: 0 2px 12px rgba(27,45,91,.1);
+}
+.hrow { display: flex; justify-content: space-between; align-items: center; }
+.logo-wrap { display: flex; align-items: center; gap: 0; }
+
+/* SVG logo — sized to match original proportions (wide logo, not square) */
+.logo-svg { width: 52px; height: 52px; flex-shrink: 0; }
+
+/* Wordmark uses Barlow Condensed Extra Bold to match the original thick bold style */
+.brand-text { display: flex; align-items: baseline; gap: 0; line-height: 1; }
+.brand-fin { font-family: 'Barlow Condensed', var(--sans); font-size: 32px; font-weight: 800; color: #1C2E5C; letter-spacing: .01em; line-height: 1; }
+.brand-hub { font-family: 'Barlow Condensed', var(--sans); font-size: 32px; font-weight: 800; color: #2EBF4E; letter-spacing: .01em; line-height: 1; }
+.brand-sub { font-size: 8px; color: var(--t3); font-family: var(--mono); letter-spacing: .1em; margin-top: 3px; }
+
+.hbtn {
+  width: 34px; height: 34px;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 15px; color: var(--navy);
+  transition: all .15s;
+}
+.hbtn:active { transform: scale(.92); background: var(--border); }
+
+/* ── CONN STRIP ── */
+.conn {
+  display: flex; align-items: center; gap: 8px;
+  margin: 12px 14px 0;
+  padding: 9px 13px;
+  border-radius: 10px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+.conn.ok  { background: var(--green-bg); border-color: var(--green-brd); }
+.conn.warn{ background: var(--amber-bg); border-color: var(--amber-brd); }
+.conn.err { background: var(--red-bg);   border-color: var(--red-brd); }
+.conn-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.conn-dot.g { background: var(--green); animation: pulse 2s infinite; }
+.conn-dot.a { background: var(--amber); }
+.conn-dot.r { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.conn-tx { flex: 1; }
+.conn-title { font-size: 11px; font-weight: 700; color: var(--tx); display: block; margin-bottom: 1px; }
+.conn-sub   { font-size: 10px; color: var(--t2); font-family: var(--mono); }
+
+/* ── SCROLL ── */
+.scroll {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 12px 14px 100px;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── SEARCH DROPDOWN ── */
+.search-dropdown {
+  position: relative;
+  background: var(--card);
+  border: 1.5px solid var(--navy);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -14px;
+  box-shadow: 0 8px 24px rgba(27,45,91,.15);
+  z-index: 100;
+}
+.search-dropdown::-webkit-scrollbar { display: none; }
+.search-inp-wrap.active {
+  border-color: var(--navy);
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+}
+.sd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sd-item:last-child { border-bottom: none; }
+.sd-item:active,
+.sd-item.highlighted { background: #EEF2FF; }
+.sd-ticker {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  min-width: 52px;
+  flex-shrink: 0;
+}
+.sd-right { flex: 1; min-width: 0; }
+.sd-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sd-meta {
+  font-size: 11px;
+  color: var(--t3);
+  font-family: var(--mono);
+  margin-top: 1px;
+}
+.sd-arrow {
+  font-size: 13px;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+.sd-match {
+  color: var(--navy);
+  font-weight: 700;
+}
+.sd-empty {
+  padding: 16px;
+  font-size: 13px;
+  color: var(--t2);
+  text-align: center;
+}
+.sd-section {
+  padding: 6px 16px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  font-family: var(--mono);
+  background: var(--card2);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── SEARCH CARD ── */
+.search-card {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+.search-label {
+  font-size: 11px; font-weight: 700; color: var(--t2);
+  letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.search-row { display: flex; gap: 8px; }
+.search-inp-wrap {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  background: var(--card2); border: 1.5px solid var(--border);
+  border-radius: var(--r-sm); padding: 0 12px;
+  transition: border-color .2s;
+}
+.search-inp-wrap:focus-within { border-color: var(--navy); }
+.search-inp-wrap input {
+  flex: 1; background: none; border: none; outline: none;
+  font-family: var(--mono); font-size: 14px; font-weight: 600;
+  color: var(--navy); padding: 11px 0; text-transform: uppercase;
+}
+.search-inp-wrap input::placeholder { text-transform: none; color: var(--t3); font-weight: 400; font-size: 12px; }
+.search-go {
+  background: var(--navy); color: #fff; border: none;
+  border-radius: var(--r-sm); padding: 11px 18px;
+  font-family: var(--sans); font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: .02em; transition: all .15s;
+  white-space: nowrap;
+}
+.search-go:active { transform: scale(.96); background: var(--navy-d); }
+
+/* watchlist chips */
+.chips { display: flex; gap: 6px; margin-top: 10px; overflow-x: auto; padding-bottom: 2px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0; padding: 5px 11px;
+  background: var(--card2); border: 1.5px solid var(--border);
+  border-radius: 20px; font-family: var(--mono); font-size: 11px;
+  font-weight: 600; color: var(--t2); cursor: pointer; transition: all .15s;
+}
+.chip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.chip:active { transform: scale(.94); }
+
+/* ── SECTION TITLE ── */
+.sec-title {
+  font-size: 11px; font-weight: 700; color: var(--t2);
+  letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 8px; margin-top: 4px;
+}
+
+/* ── MARKET STRIP ── */
+.mkt-strip { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
+.mkt-strip::-webkit-scrollbar { display: none; }
+.mkt-chip {
+  flex-shrink: 0; background: var(--card);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 600; color: var(--t1);
+  font-family: var(--mono); box-shadow: var(--shadow);
+}
+.mkt-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ── STOCK CARD ── */
+.scard {
+  background: var(--card); border-radius: var(--r);
+  border: 1.5px solid var(--border); padding: 14px;
+  margin-bottom: 8px; cursor: pointer;
+  box-shadow: var(--shadow); transition: all .18s;
+  position: relative; overflow: hidden;
+}
+.scard:active { transform: scale(.99); box-shadow: none; }
+.scard.on { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(27,45,91,.08), var(--shadow); }
+.scard::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 3px 0 0 3px; opacity: 0;
+  transition: opacity .2s;
+}
+.scard.on::before { opacity: 1; background: var(--navy); }
+
+.sc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.sc-l { display: flex; align-items: center; gap: 10px; }
+.sc-ico {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--navy); display: flex; align-items: center;
+  justify-content: center; font-size: 15px; font-weight: 800;
+  color: #fff; font-family: var(--sans); flex-shrink: 0;
+}
+.sc-sym { font-size: 16px; font-weight: 800; color: var(--navy); letter-spacing: -.2px; }
+.sc-nm  { font-size: 11px; color: var(--t2); margin-top: 1px; }
+
+.sc-r { text-align: right; }
+.sc-px { font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--tx); }
+.sc-ch { font-family: var(--mono); font-size: 11px; font-weight: 600; margin-top: 2px; }
+.sc-ch.up { color: var(--green-d); }
+.sc-ch.dn { color: var(--red); }
+
+/* recommendation pill on card */
+.sc-rec {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  margin-bottom: 8px;
+}
+.sc-rec.buy  { background: var(--green-bg); color: var(--green-d); border: 1px solid var(--green-brd); }
+.sc-rec.hold { background: var(--amber-bg); color: var(--amber);   border: 1px solid var(--amber-brd); }
+.sc-rec.sell { background: var(--red-bg);   color: var(--red);     border: 1px solid var(--red-brd); }
+
+.sc-summary { font-size: 11px; color: var(--t1); line-height: 1.55; }
+
+/* spark */
+.sc-spark { height: 32px; margin-top: 10px; }
+.sc-spark svg { width: 100%; height: 100%; }
+
+/* ══════════════════════════════════════════════════════════════
+   BOTTOM NAV — 4 tabs, always visible at bottom
+══════════════════════════════════════════════════════════════ */
+.bnav {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: var(--w);
+  background: var(--card);
+  border-top: 1.5px solid var(--border);
+  display: flex;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -4px 24px rgba(27,45,91,.10);
+}
+@media(max-width:420px){ .bnav { width:100%; left:0; transform:none; } }
+
+.bni {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 9px 0 11px;
+  cursor: pointer;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--t3);
+  transition: color .15s;
+  font-family: var(--sans);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.bni.on { color: var(--navy); }
+.bni:active { opacity: .6; }
+.bni-ic { font-size: 22px; line-height: 1; }
+
+/* Green dot on analysis tabs once stock is loaded */
+.bni.has-data::after {
+  content: '';
+  position: absolute;
+  top: 7px; right: calc(50% - 16px);
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  border: 1.5px solid var(--card);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   APP LAYOUT — all views live inside .app which fills the screen
+   The visible area is: sbar → header → content → bnav
+══════════════════════════════════════════════════════════════ */
+
+/* The markets view is already .scroll inside .app — no changes needed */
+
+/* Full-screen analysis pages sit inside .app, stacked over markets */
+.pg-screen {
+  /* Fills .app — positioned to fill from top of .app */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* Stock hero — part of the pg-screen flex column, NOT fixed */
+.stock-hero-bar {
+  background: var(--navy);
+  flex-shrink: 0;
+}
+.pg-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 10px;
+}
+.pg-hero-left { flex: 1; min-width: 0; }
+.pg-sym {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.2px;
+  line-height: 1.1;
+}
+.pg-nm {
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.pg-hero-right { text-align: right; flex-shrink: 0; }
+.pg-px {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+.pg-ch {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.pg-ch.up { color: #5EE87A; }
+.pg-ch.dn { color: #FC8181; }
+.pg-rec {
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pg-rec.buy      { background: rgba(45,198,83,.2);  color: #5EE87A; border: 1px solid rgba(45,198,83,.3); }
+.pg-rec.hold     { background: rgba(217,119,6,.2);  color: #FFB020; border: 1px solid rgba(217,119,6,.3); }
+.pg-rec.sell     { background: rgba(229,62,62,.2);  color: #FC8181; border: 1px solid rgba(229,62,62,.3); }
+.pg-rec.analyzing{ background: rgba(255,255,255,.08); color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.12); }
+
+/* Confidence bar row */
+.pg-conf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 8px;
+}
+.pg-conf-track {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pg-conf-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .6s;
+  width: 0%;
+}
+.pg-conf-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.45);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+/* Tab strip — Summary | Outlook | Indicators */
+.pg-tab-strip {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.pg-tab {
+  flex: 1;
+  text-align: center;
+  padding: 9px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pg-tab.on { color: #fff; border-bottom-color: var(--green); }
+.pg-tab:active { opacity: .6; }
+
+/* Scrollable content area — fills remaining space */
+.pg-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 14px 90px;
+}
+.pg-scroll::-webkit-scrollbar { display: none; }
+
+/* Loading state inside pages */
+.pg-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  gap: 14px;
+  text-align: center;
+}
+.pg-loading-title { font-size: 15px; font-weight: 700; color: var(--tx); }
+.pg-loading-sub   { font-size: 13px; color: var(--t2); line-height: 1.65; }
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 24px; gap: 14px; text-align: center;
+}
+.pg-loading-title { font-size: 14px; font-weight: 700; color: var(--tx); }
+.pg-loading-sub { font-size: 12px; color: var(--t2); line-height: 1.6; }
+
+/* ── SHEET (keep class for JS compat but invisible) ── */
+.bdrop { display: none !important; }
+.sheet { display: none !important; }
+
+/* sheet hero */
+.sh-hero {
+  background: var(--navy);
+  padding: 14px 18px 22px;
+  position: relative; overflow: hidden;
+}
+.sh-hero::after {
+  content: ''; position: absolute;
+  bottom: -1px; left: 0; right: 0; height: 20px;
+  background: var(--bg); border-radius: 20px 20px 0 0;
+}
+.sh-hero-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.sh-sym { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+.sh-nm  { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
+.sh-rec-big {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 13px; font-weight: 800; letter-spacing: .04em;
+}
+.sh-rec-big.buy      { background: var(--green-bg); color: var(--green-l); border: 1px solid rgba(45,198,83,.3); }
+.sh-rec-big.hold     { background: var(--amber-bg); color: #FFB020;         border: 1px solid rgba(217,119,6,.3); }
+.sh-rec-big.sell     { background: var(--red-bg);   color: #FC8181;         border: 1px solid rgba(229,62,62,.3); }
+.sh-rec-big.analyzing{ background: rgba(255,255,255,.08); color: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.12); }
+
+.sh-px-row { display: flex; align-items: baseline; gap: 10px; margin-top: 10px; }
+.sh-px { font-family: var(--mono); font-size: 30px; font-weight: 600; color: #fff; }
+.sh-ch { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.sh-ch.up { color: var(--green-l); }
+.sh-ch.dn { color: #FC8181; }
+.sh-updated { font-size: 9px; color: rgba(255,255,255,.35); font-family: var(--mono); margin-top: 6px; }
+
+/* confidence meter */
+.conf-wrap { margin-top: 12px; }
+.conf-label { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,.5); font-family: var(--mono); margin-bottom: 5px; }
+.conf-track { height: 5px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden; }
+.conf-fill  { height: 100%; border-radius: 3px; transition: width .6s; }
+
+/* sheet tabs */
+.sh-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+  margin: 12px 16px 0; flex-shrink: 0;
+}
+.sh-tab {
+  flex: 1; text-align: center; padding: 9px 0;
+  font-size: 13px; font-weight: 700; letter-spacing: .03em;
+  text-transform: uppercase; color: var(--t3); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all .15s;
+}
+.sh-tab.on { color: var(--navy); border-bottom-color: var(--navy); }
+
+.sh-pane { display: none; padding: 16px 14px 0; }
+.sh-pane.on { display: block; }
+
+/* ── SUMMARY PANE ── */
+.summary-hero {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); padding: 16px;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.sh-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--t3); margin-bottom: 8px;
+}
+.verdict-statement {
+  font-size: 14px; font-weight: 600; color: var(--tx);
+  line-height: 1.6; margin-bottom: 10px;
+}
+.reason-list { display: flex; flex-direction: column; gap: 6px; }
+.reason-item {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 12px; color: var(--t1); line-height: 1.5;
+}
+.reason-ic { font-size: 14px; flex-shrink: 0; margin-top: -1px; }
+
+/* key stats row */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 13px 11px;
+  box-shadow: var(--shadow);
+}
+.stat-label { font-size: 11px; font-weight: 700; color: var(--t2); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 5px; }
+.stat-val   { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--tx); }
+.stat-sub   { font-size: 11px; color: var(--t2); margin-top: 3px; font-family: var(--mono); }
+.stat-val.g { color: var(--green-d); }
+.stat-val.r { color: var(--red); }
+.stat-val.a { color: var(--amber); }
+.stat-val.n { color: var(--navy); }
+
+/* ── OUTLOOK PANE ── */
+.outlook-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); padding: 14px;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.oc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.oc-icon { font-size: 22px; flex-shrink: 0; }
+.oc-title { font-size: 14px; font-weight: 700; color: var(--tx); }
+.oc-sub { font-size: 11px; color: var(--t2); margin-top: 2px; }
+.oc-body { font-size: 12px; color: var(--t1); line-height: 1.7; }
+
+/* ── RICH OUTLOOK CARDS ── */
+.ol-card { background:var(--card); border-radius:var(--r); border:1px solid var(--border); margin-bottom:10px; overflow:hidden; box-shadow:var(--shadow); }
+.ol-card-hd { display:flex; align-items:center; gap:12px; padding:16px 16px 13px; border-bottom:1px solid var(--border); }
+.ol-card-hd-icon { font-size:22px; flex-shrink:0; }
+.ol-card-hd-title { font-size:15px; font-weight:700; color:var(--tx); }
+.ol-card-hd-sub { font-size:12px; color:var(--t2); margin-top:3px; }
+.ol-card-body { padding:15px 16px; }
+.ol-direction-banner { display:flex; align-items:center; justify-content:space-between; padding:14px 15px; border-radius:var(--r-sm); margin-bottom:14px; border:1px solid; }
+.ol-direction-banner.up   { background:var(--green-bg); border-color:var(--green-brd); }
+.ol-direction-banner.dn   { background:var(--red-bg);   border-color:var(--red-brd); }
+.ol-direction-banner.neut { background:var(--amber-bg); border-color:var(--amber-brd); }
+.ol-dir-label { font-size:16px; font-weight:700; }
+.ol-direction-banner.up   .ol-dir-label { color:var(--green-d); }
+.ol-direction-banner.dn   .ol-dir-label { color:var(--red); }
+.ol-direction-banner.neut .ol-dir-label { color:var(--amber); }
+.ol-dir-conf { font-family:var(--mono); font-size:11px; font-weight:600; }
+.ol-narrative { font-size:14px; color:var(--t1); line-height:1.8; margin-bottom:14px; }
+
+/* Price zones */
+.ol-price-zone { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+.opz { padding:12px 10px; border-radius:var(--r-sm); text-align:center; border:1px solid; }
+.opz.high { background:var(--green-bg); border-color:var(--green-brd); }
+.opz.base { background:#EEF2FF; border-color:rgba(27,45,91,.15); }
+.opz.low  { background:var(--red-bg); border-color:var(--red-brd); }
+.opz-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; font-family:var(--mono); margin-bottom:5px; }
+.opz.high .opz-label { color:var(--green-d); }
+.opz.base .opz-label { color:var(--navy); }
+.opz.low  .opz-label { color:var(--red); }
+.opz-price { font-family:var(--mono); font-size:17px; font-weight:700; }
+.opz.high .opz-price { color:var(--green-d); }
+.opz.base .opz-price { color:var(--navy); }
+.opz.low  .opz-price { color:var(--red); }
+.opz-note { font-size:11px; color:var(--t3); margin-top:3px; font-family:var(--mono); }
+
+/* Fact rows */
+.fact-row { display:flex; align-items:flex-start; gap:11px; padding:11px 0; border-bottom:1px solid var(--border); font-size:13px; color:var(--t1); line-height:1.65; }
+.fact-row:last-child { border-bottom:none; padding-bottom:0; }
+.fact-ic { font-size:17px; flex-shrink:0; margin-top:1px; }
+.fact-text { flex:1; }
+.fact-text strong { color:var(--tx); font-weight:600; }
+
+/* price targets */
+.targets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.target {
+  padding: 14px 10px; border-radius: var(--r-sm);
+  border: 1px solid;
+}
+.target.bull { background: var(--green-bg); border-color: var(--green-brd); }
+.target.base { background: var(--amber-bg); border-color: var(--amber-brd); }
+.target.bear { background: var(--red-bg);   border-color: var(--red-brd); }
+.target-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; text-align:center; }
+.target.bull .target-label { color: var(--green-d); }
+.target.base .target-label { color: var(--amber); }
+.target.bear .target-label { color: var(--red); }
+.target-px { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--tx); display:block; text-align:center; }
+.target-pct { font-family: var(--mono); font-size: 12px; margin-top: 4px; display:block; text-align:center; }
+.target.bull .target-pct { color: var(--green-d); }
+.target.base .target-pct { color: var(--amber); }
+.target.bear .target-pct { color: var(--red); }
+
+/* catalyst cards */
+.cat-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); overflow: hidden;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.cat-card-hd {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700; letter-spacing: .03em;
+  text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+}
+.cat-card-hd.bull { color: var(--green-d); background: var(--green-bg); }
+.cat-card-hd.bear { color: var(--red);     background: var(--red-bg); }
+.cat-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; color: var(--t1); line-height: 1.65;
+}
+.cat-item:last-child { border-bottom: none; }
+.cat-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--card2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--t2);
+  flex-shrink: 0; margin-top: 2px;
+}
+
+/* analyst row */
+.analyst-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); padding: 14px;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.analyst-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.analyst-rating { font-size: 18px; font-weight: 800; color: var(--navy); }
+.analyst-count  { font-size: 10px; color: var(--t2); margin-top: 2px; font-family: var(--mono); }
+.analyst-target { text-align: right; }
+.analyst-px     { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--green-d); }
+.analyst-lbl    { font-size: 10px; color: var(--t2); margin-top: 2px; }
+.analyst-bars   { display: flex; gap: 6px; }
+.abar { flex: 1; }
+.abar-track { height: 6px; background: var(--card2); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 4px; }
+.abar-fill  { height: 100%; border-radius: 3px; transition: width .5s; }
+.abar-label { font-size: 9px; font-weight: 700; color: var(--t3); text-align: center; font-family: var(--mono); }
+.abar-count { font-size: 13px; font-weight: 700; text-align: center; font-family: var(--mono); margin-bottom: 2px; }
+.abar.buy .abar-fill  { background: var(--green); }
+.abar.hold .abar-fill { background: var(--amber); }
+.abar.sell .abar-fill { background: var(--red); }
+.abar.buy .abar-count  { color: var(--green-d); }
+.abar.hold .abar-count { color: var(--amber); }
+.abar.sell .abar-count { color: var(--red); }
+
+/* ── INDICATORS PANE ── */
+.ind-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); margin-bottom: 10px;
+  overflow: hidden; box-shadow: var(--shadow);
+}
+.ind-card-hd {
+  padding: 10px 14px;
+  background: var(--card2); border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--t2);
+}
+.ind-row {
+  display: flex; align-items: center;
+  padding: 9px 14px; border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.ind-row:last-child { border-bottom: none; }
+.ind-name { color: var(--t1); flex: 1; }
+.ind-val  { font-family: var(--mono); font-weight: 600; color: var(--tx); margin: 0 10px; min-width: 62px; text-align: right; font-size: 12px; }
+.ibadge   {
+  font-size: 9px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; letter-spacing: .05em;
+  text-transform: uppercase; border: 1px solid; white-space: nowrap;
+  font-family: var(--mono);
+}
+.ibadge.g { background: var(--green-bg); color: var(--green-d); border-color: var(--green-brd); }
+.ibadge.r { background: var(--red-bg);   color: var(--red);     border-color: var(--red-brd); }
+.ibadge.a { background: var(--amber-bg); color: var(--amber);   border-color: var(--amber-brd); }
+.ibadge.n { background: #EEF2FF; color: var(--navy);  border-color: rgba(27,45,91,.15); }
+
+/* ── EMPTY / LOADING ── */
+.empty-state {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); padding: 32px 20px;
+  text-align: center; box-shadow: var(--shadow);
+}
+.spin { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--navy); border-radius: 50%; animation: sp .7s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 88px; left: 50%;
+  transform: translateX(-50%) translateY(14px);
+  background: var(--navy); color: #fff;
+  border-radius: 10px; padding: 9px 16px;
+  font-size: 12px; font-weight: 600; font-family: var(--sans);
+  z-index: 300; opacity: 0; transition: all .22s;
+  white-space: nowrap; box-shadow: var(--shadow-lg);
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.divider { height: 1px; background: var(--border); margin: 8px 0; }
+.spacer  { height: 10px; }
+
+/* mkthero uses inline styles for precise per-card control */
+
+/* Overall market summary card */
+.mkt-summary-card {
+  background: var(--navy);
+  border-radius: var(--r);
+  padding: 14px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-lg);
+}
+.mkt-summary-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.5); letter-spacing: .08em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 6px; }
+.mkt-summary-body  { font-size: 13px; font-weight: 600; color: #fff; line-height: 1.55; }
+.mkt-summary-sub   { font-size: 11px; color: rgba(255,255,255,.6); margin-top: 6px; line-height: 1.5; }
+.mkt-summary-tags  { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.mkt-tag {
+  font-size: 9px; font-weight: 700; padding: 3px 9px;
+  border-radius: 20px; letter-spacing: .05em; text-transform: uppercase;
+  font-family: var(--mono); border: 1px solid;
+}
+.mkt-tag.g { background: rgba(46,191,78,.15); color: #5EE87A; border-color: rgba(46,191,78,.3); }
+.mkt-tag.r { background: rgba(229,62,62,.15);  color: #FC8181; border-color: rgba(229,62,62,.3); }
+.mkt-tag.a { background: rgba(217,119,6,.15);  color: #FBD38D; border-color: rgba(217,119,6,.3); }
+.mkt-tag.w { background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); border-color: rgba(255,255,255,.15); }
+
+/* ── NEWS SENTIMENT SECTION ── */
+.sentiment-header {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 13px 14px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sent-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.sent-title    { font-size: 12px; font-weight: 700; color: var(--tx); }
+.sent-updated  { font-size: 9px; color: var(--t3); font-family: var(--mono); }
+.sent-meter    { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sent-label    { font-size: 10px; color: var(--t2); font-family: var(--mono); width: 60px; flex-shrink: 0; }
+.sent-bar-wrap { flex: 1; height: 8px; background: var(--card2); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.sent-bar-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+.sent-pct      { font-family: var(--mono); font-size: 10px; font-weight: 600; width: 32px; text-align: right; }
+
+.news-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  margin-bottom: 6px;
+  box-shadow: var(--shadow);
+}
+.news-sent-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 4px;
+}
+.news-body { flex: 1; }
+.news-source { font-size: 9px; font-weight: 700; color: var(--t3); font-family: var(--mono); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 3px; }
+.news-headline { font-size: 12px; font-weight: 600; color: var(--tx); line-height: 1.45; margin-bottom: 3px; }
+.news-summary  { font-size: 11px; color: var(--t1); line-height: 1.5; }
+.news-tag-row  { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+.news-tag {
+  font-size: 8px; font-weight: 700; padding: 2px 6px;
+  border-radius: 10px; letter-spacing: .04em; font-family: var(--mono);
+  border: 1px solid;
+}
+.news-tag.bull { background: var(--green-bg); color: var(--green-d); border-color: var(--green-brd); }
+.news-tag.bear { background: var(--red-bg);   color: var(--red);     border-color: var(--red-brd); }
+.news-tag.neut { background: var(--amber-bg); color: var(--amber);   border-color: var(--amber-brd); }
+
+/* ── SUMMARY REDESIGN ── */
+.sum-hero {
+  background: var(--navy);
+  border-radius: var(--r);
+  padding: 18px 18px 16px;
+  margin-bottom: 10px;
+}
+.sum-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.sum-hero-meta {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.45);
+  font-family: var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+.sum-verdict-pill {
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+.sum-verdict-reason {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.sum-conf-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.sum-conf-label {
+  font-size: 11px;
+  color: rgba(255,255,255,.45);
+  font-family: var(--mono);
+}
+.sum-conf-pct {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.sum-conf-track {
+  height: 5px;
+  background: rgba(255,255,255,.12);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.sum-conf-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .6s;
+}
+.sum-regime {
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  line-height: 1.6;
+  font-style: italic;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+
+/* Earnings alert */
+.sum-earnings-alert {
+  background: #FFFBF0;
+  border: 1.5px solid var(--amber-brd);
+  border-left: 4px solid var(--amber);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.sum-earnings-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+  font-family: var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.sum-earnings-body {
+  font-size: 13px;
+  color: var(--tx);
+  line-height: 1.65;
+}
+
+/* Outlook cards */
+.sum-outlook-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-outlook-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sum-outlook-icon { font-size: 18px; flex-shrink: 0; }
+.sum-outlook-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: .02em;
+}
+.sum-outlook-text {
+  font-size: 14px;
+  color: var(--t1);
+  line-height: 1.75;
+}
+
+/* Driver / Risk list cards */
+.sum-list-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-list-hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.sum-list-hd-bull { background: var(--green-bg); color: var(--green-d); }
+.sum-list-hd-bear { background: var(--red-bg);   color: var(--red); }
+.sum-list-hd-icon {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.sum-list-hd-bull .sum-list-hd-icon { background: var(--green); color: #fff; }
+.sum-list-hd-bear .sum-list-hd-icon { background: var(--red);   color: #fff; }
+.sum-list-body { padding: 4px 0; }
+.sum-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sum-list-item:last-child { border-bottom: none; }
+.sum-list-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+.sum-list-num-bull { background: var(--green-bg); color: var(--green-d); border: 1px solid var(--green-brd); }
+.sum-list-num-bear { background: var(--red-bg);   color: var(--red);     border: 1px solid var(--red-brd); }
+.sum-list-text {
+  font-size: 13px;
+  color: var(--t1);
+  line-height: 1.65;
+  flex: 1;
+}
+
+/* Price scenarios */
+.sum-scenarios-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-scenarios-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 13px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card2);
+}
+.sum-scenario {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sum-scenario:last-child { border-bottom: none; }
+.sum-scenario-bull { background: var(--green-bg); }
+.sum-scenario-neut { background: #EEF2FF; }
+.sum-scenario-bear { background: var(--red-bg); }
+.sum-scenario-left {
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 72px;
+}
+.sum-scenario-label {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.sum-scenario-price {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.sum-scenario-prob {
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 600;
+  opacity: .8;
+}
+.sum-scenario-desc {
+  font-size: 13px;
+  color: var(--t1);
+  line-height: 1.65;
+  padding-top: 3px;
+  flex: 1;
+}
+
+/* Key levels */
+.sum-levels-card {
+  background: var(--card);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-levels-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.sum-levels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sum-level {
+  border-radius: var(--r-sm);
+  padding: 13px 12px;
+  text-align: center;
+  border: 1px solid;
+}
+.sum-level-support { background: var(--green-bg); border-color: var(--green-brd); }
+.sum-level-resist  { background: var(--red-bg);   border-color: var(--red-brd); }
+.sum-level-icon { font-size: 16px; margin-bottom: 5px; }
+.sum-level-label {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.sum-level-support .sum-level-label { color: var(--green-d); }
+.sum-level-resist  .sum-level-label { color: var(--red); }
+.sum-level-price {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.sum-level-support .sum-level-price { color: var(--green-d); }
+.sum-level-resist  .sum-level-price { color: var(--red); }
+.sum-level-source { font-size: 11px; color: var(--t2); }
+
+.sum-stop-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-brd);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  gap: 12px;
+}
+.sum-stop-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--amber);
+  font-family: var(--mono);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.sum-stop-note { font-size: 12px; color: var(--t1); line-height: 1.5; }
+.sum-stop-price {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--amber);
+  flex-shrink: 0;
+}
+
+/* ── PWA UPDATE BANNER ── */
+.update-banner {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  width: calc(var(--w) - 28px);
+  background: var(--navy);
+  border-radius: var(--r);
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 200;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transition: all .3s cubic-bezier(.32,.72,0,1);
+  pointer-events: none;
+}
+.update-banner.on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: all;
+}
+@media(max-width:420px){
+  .update-banner { width: calc(100vw - 28px); left: 14px; transform: translateY(20px); }
+  .update-banner.on { transform: translateY(0); }
+}
+.update-banner-text {
+  flex: 1;
+  font-size: 13px;
+  color: #fff;
+  line-height: 1.4;
+}
+.update-banner-text strong { display: block; font-size: 14px; margin-bottom: 2px; }
+.update-banner-text span { color: rgba(255,255,255,.6); font-size: 12px; }
+.update-btn {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.update-btn:active { transform: scale(.95); }
+.disclaimer {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+/* What is moving this stock card */
+.sum-what-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); border-left: 4px solid var(--navy);
+  padding: 16px; margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.sum-what-title { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.sum-what-icon { font-size: 18px; }
+.sum-what-title span:last-child { font-size:13px; font-weight:700; color:var(--navy); letter-spacing:.03em; text-transform:uppercase; }
+.sum-what-body { font-size:14px; color:var(--t1); line-height:1.75; }
+
+/* Buyer/Seller control card */
+.sum-control-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); padding: 16px;
+  margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.sum-control-title { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.sum-control-icon { font-size:16px; }
+.sum-control-title span:last-child { font-size:13px; font-weight:700; color:var(--tx); letter-spacing:.03em; text-transform:uppercase; }
+.sum-control-body { font-size:14px; color:var(--t1); line-height:1.75; }
+
+.disc-title {
+  font-size: 11px; font-weight: 700; color: var(--amber);
+  letter-spacing: .04em; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 5px;
+}
+.disc-body {
+  font-size: 10px; color: var(--t2); line-height: 1.7;
+}
+.disc-body strong { color: var(--t1); font-weight: 600; }
+.disc-footer {
+  font-size: 9px; color: var(--t3); font-family: var(--mono);
+  margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid var(--border);
+  text-align: center; letter-spacing: .04em;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FULL-SCREEN ANALYSIS PAGES
+   Architecture: each page is position:absolute inside .app
+   which is position:relative. The page fills the entire .app.
+   Inside each page: flex column
+     → pg-sbar-spacer (same height as sbar+header = 100px)
+     → pg-hero-wrap   (stock info + tabs, in flow, never floats)
+     → pg-scroll      (flex:1, overflow-y:auto — user scrolls here)
+   This means the hero NEVER overlaps scrolling content.
+══════════════════════════════════════════════════════════════ */
+
+.pg-screen {
+  position: absolute;
+  inset: 0;                        /* fill entire .app container */
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  z-index: 10;
+  overflow: hidden;                /* pg-scroll handles scrolling */
+}
+
+/* Matches the combined height of .sbar + .header so content starts below them */
+.pg-sbar-spacer {
+  height: 100px;
+  flex-shrink: 0;
+  background: var(--navy);         /* seamless with header */
+}
+
+/* ── STOCK HERO — in-flow, never position:fixed ─────────────── */
+.pg-hero-wrap {
+  flex-shrink: 0;
+  background: var(--navy);
+}
+.pg-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 8px;
+}
+.pg-hero-left  { flex: 1; min-width: 0; }
+.pg-hero-right { text-align: right; flex-shrink: 0; }
+
+.pg-sym {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.3px;
+  line-height: 1.1;
+}
+.pg-nm {
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+.pg-px {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+.pg-ch {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 3px;
+}
+.pg-ch.up { color: #5EE87A; }
+.pg-ch.dn { color: #FC8181; }
+.pg-rec {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pg-rec.buy      { background:rgba(45,198,83,.2);   color:#5EE87A;  border:1px solid rgba(45,198,83,.35); }
+.pg-rec.hold     { background:rgba(217,119,6,.2);   color:#FFB020;  border:1px solid rgba(217,119,6,.35); }
+.pg-rec.sell     { background:rgba(229,62,62,.2);   color:#FC8181;  border:1px solid rgba(229,62,62,.35); }
+.pg-rec.analyzing{ background:rgba(255,255,255,.08);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.12); }
+
+/* Confidence bar */
+.pg-conf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 10px;
+}
+.pg-conf-track {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pg-conf-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  background: var(--green);
+  transition: width .6s ease;
+}
+.pg-conf-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.4);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+/* ── TAB STRIP (Summary / Outlook / Indicators) ─────────────── */
+.pg-tab-strip {
+  display: flex;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.pg-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.35);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pg-tab.on { color: #fff; border-bottom-color: var(--green); }
+.pg-tab:active { opacity: .6; }
+
+/* ── SCROLLABLE CONTENT AREA ─────────────────────────────────── */
+.pg-scroll {
+  flex: 1;                         /* fills remaining height */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 14px 90px;         /* 90px bottom = clears bnav */
+}
+.pg-scroll::-webkit-scrollbar { display: none; }
+
+/* ── LOADING STATE ───────────────────────────────────────────── */
+.pg-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  gap: 14px;
+  text-align: center;
+  padding: 40px 24px;
+}
+.pg-loading-title { font-size: 15px; font-weight: 700; color: var(--tx); }
+.pg-loading-sub   { font-size: 13px; color: var(--t2); line-height: 1.65; }
 </style>
 </head>
 <body>
@@ -1487,14 +2961,27 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
   </div>
 </div>
 
-<!-- STOCK HERO STRIP — shown on all analysis tabs, positioned below sbar+header -->
-<div id="stockHero" style="display:none">
-  <!-- Offset spacer to push hero below sbar + header -->
-  <div id="stockHeroInner">
-    <div class="pg-hero" id="pgHero">
+<!-- ══════════════════════════════════════════════════════
+  ANALYSIS PAGES
+  Each page = full-screen flex column:
+    [navy spacer — same height as sbar+header]
+    [stock hero bar — in flow, scrolls to top, NEVER FLOATS]
+    [tab strip — in flow, always visible below hero]
+    [pg-scroll — fills rest, user scrolls content here]
+  No position:fixed, no z-index tricks, no spacer hacks.
+══════════════════════════════════════════════════════ -->
+
+<!-- shared stock-hero snippet duplicated into each page so it is IN THE FLOW -->
+<!-- PAGE: SUMMARY -->
+<div class="pg-screen" id="pg-summary" style="display:none">
+  <!-- Pushes content below the fixed sbar + header -->
+  <div class="pg-sbar-spacer"></div>
+  <!-- Stock hero — IN FLOW, part of the flex column -->
+  <div class="pg-hero-wrap" id="pgHeroA">
+    <div class="pg-hero">
       <div class="pg-hero-left">
         <div class="pg-sym" id="pgSym">—</div>
-        <div class="pg-nm"  id="pgNm">Loading...</div>
+        <div class="pg-nm"  id="pgNm">—</div>
       </div>
       <div class="pg-hero-right">
         <div class="pg-px" id="pgPx">—</div>
@@ -1502,29 +2989,21 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
       </div>
       <div class="pg-rec analyzing" id="pgRec">⚡</div>
     </div>
-    <!-- Confidence bar strip -->
-    <div id="pgConfRow" style="background:var(--navy);padding:0 16px 10px;display:flex;align-items:center;gap:10px">
-      <div style="flex:1;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden">
-        <div id="pgConfBar" style="height:100%;width:0%;background:var(--green);border-radius:2px;transition:width .5s"></div>
-      </div>
-      <div id="pgConfPct" style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);font-family:var(--mono);white-space:nowrap">GPT-4o</div>
+    <div class="pg-conf-row">
+      <div class="pg-conf-track"><div class="pg-conf-fill" id="pgConfBar"></div></div>
+      <div class="pg-conf-label" id="pgConfPct">GPT-4o</div>
     </div>
-    <!-- Tab strip on the hero -->
     <div class="pg-tab-strip">
-      <div class="pg-tab on" id="pgtab-summary"   onclick="mainTab('summary',null)">Summary</div>
-      <div class="pg-tab"     id="pgtab-outlook"   onclick="mainTab('outlook',null)">Outlook</div>
-      <div class="pg-tab"     id="pgtab-indicators"onclick="mainTab('indicators',null)">Indicators</div>
+      <div class="pg-tab on" id="pgtab-summary"    onclick="mainTab('summary')">Summary</div>
+      <div class="pg-tab"   id="pgtab-outlook"    onclick="mainTab('outlook')">Outlook</div>
+      <div class="pg-tab"   id="pgtab-indicators" onclick="mainTab('indicators')">Indicators</div>
     </div>
   </div>
-</div>
-
-<!-- PAGE: SUMMARY -->
-<div class="pg-screen" id="pg-summary" style="display:none">
+  <!-- Scrollable content -->
   <div class="pg-scroll">
-    <div class="pg-hero-spacer"></div>
-    <div id="shAISummary" style="padding-top:10px"></div>
-    <div class="stats-grid" style="padding:0 0 0" id="shStats"></div>
-    <div class="ind-card" style="margin:8px 0 10px">
+    <div id="shAISummary"></div>
+    <div class="stats-grid" id="shStats"></div>
+    <div class="ind-card" style="margin-bottom:10px">
       <div class="ind-card-hd">Analyst Consensus</div>
       <div id="shAnalyst" style="padding:14px"></div>
     </div>
@@ -1533,28 +3012,70 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 
 <!-- PAGE: OUTLOOK -->
 <div class="pg-screen" id="pg-outlook" style="display:none">
+  <div class="pg-sbar-spacer"></div>
+  <div class="pg-hero-wrap" id="pgHeroB">
+    <div class="pg-hero">
+      <div class="pg-hero-left">
+        <div class="pg-sym" id="pgSymB">—</div>
+        <div class="pg-nm"  id="pgNmB">—</div>
+      </div>
+      <div class="pg-hero-right">
+        <div class="pg-px" id="pgPxB">—</div>
+        <div class="pg-ch" id="pgChB">—</div>
+      </div>
+      <div class="pg-rec analyzing" id="pgRecB">⚡</div>
+    </div>
+    <div class="pg-conf-row">
+      <div class="pg-conf-track"><div class="pg-conf-fill" id="pgConfBarB"></div></div>
+      <div class="pg-conf-label" id="pgConfPctB">GPT-4o</div>
+    </div>
+    <div class="pg-tab-strip">
+      <div class="pg-tab"   id="pgtabB-summary"    onclick="mainTab('summary')">Summary</div>
+      <div class="pg-tab on" id="pgtabB-outlook"    onclick="mainTab('outlook')">Outlook</div>
+      <div class="pg-tab"   id="pgtabB-indicators" onclick="mainTab('indicators')">Indicators</div>
+    </div>
+  </div>
   <div class="pg-scroll">
-    <div class="pg-hero-spacer"></div>
-    <div style="padding-top:10px">
-      <div id="shTodayCard"></div>
-      <div id="shWeekCard"></div>
-      <div class="sh-section-label" style="margin:4px 0 8px">3-Month Price Targets</div>
-      <div class="targets" id="shTargets"></div>
-      <div class="cat-card" style="margin-bottom:8px" id="shBull">
-        <div class="cat-card-hd bull">📈 What could drive price higher</div>
-      </div>
-      <div class="cat-card" style="margin-bottom:24px" id="shBear">
-        <div class="cat-card-hd bear">⚠️ Key risks to watch</div>
-      </div>
+    <div id="shTodayCard"></div>
+    <div id="shWeekCard"></div>
+    <div class="sh-section-label" style="margin:4px 0 8px">3-Month Price Targets</div>
+    <div class="targets" id="shTargets"></div>
+    <div class="cat-card" style="margin-bottom:8px" id="shBull">
+      <div class="cat-card-hd bull">📈 What could drive price higher</div>
+    </div>
+    <div class="cat-card" style="margin-bottom:24px" id="shBear">
+      <div class="cat-card-hd bear">⚠️ Key risks to watch</div>
     </div>
   </div>
 </div>
 
 <!-- PAGE: INDICATORS -->
 <div class="pg-screen" id="pg-indicators" style="display:none">
+  <div class="pg-sbar-spacer"></div>
+  <div class="pg-hero-wrap" id="pgHeroC">
+    <div class="pg-hero">
+      <div class="pg-hero-left">
+        <div class="pg-sym" id="pgSymC">—</div>
+        <div class="pg-nm"  id="pgNmC">—</div>
+      </div>
+      <div class="pg-hero-right">
+        <div class="pg-px" id="pgPxC">—</div>
+        <div class="pg-ch" id="pgChC">—</div>
+      </div>
+      <div class="pg-rec analyzing" id="pgRecC">⚡</div>
+    </div>
+    <div class="pg-conf-row">
+      <div class="pg-conf-track"><div class="pg-conf-fill" id="pgConfBarC"></div></div>
+      <div class="pg-conf-label" id="pgConfPctC">GPT-4o</div>
+    </div>
+    <div class="pg-tab-strip">
+      <div class="pg-tab"   id="pgtabC-summary"    onclick="mainTab('summary')">Summary</div>
+      <div class="pg-tab"   id="pgtabC-outlook"    onclick="mainTab('outlook')">Outlook</div>
+      <div class="pg-tab on" id="pgtabC-indicators" onclick="mainTab('indicators')">Indicators</div>
+    </div>
+  </div>
   <div class="pg-scroll">
-    <div class="pg-hero-spacer"></div>
-    <div id="shInds" style="padding-top:10px"></div>
+    <div id="shInds"></div>
   </div>
 </div>
 
@@ -1676,9 +3197,17 @@ async function loadAll() {
 }
 
 async function refreshAll() {
-  toast('Refreshing...');
-  await loadAll();
-  toast('✓ Updated');
+  if (S.stockLoaded && S.lastSym) {
+    toast('Refreshing ' + S.lastSym + '...');
+    delete S.quotes[S.lastSym];
+    delete analystCache[S.lastSym];
+    await Promise.all([loadAll(), openSheet(S.lastSym)]);
+    toast('✓ ' + S.lastSym + ' updated');
+  } else {
+    toast('Refreshing market data...');
+    await loadAll();
+    toast('✓ Market data updated');
+  }
 }
 
 async function loadQuotes() {
@@ -2106,15 +3635,16 @@ function getQuickRec(px, pv, vwap, sym) {
 
 // ── OPEN SHEET ────────────────────────────────────────────────────────────────
 async function openSheet(sym) {
-  S.selected   = sym;
+  S.selected    = sym;
   S.stockLoaded = true;
+  S.lastSym     = sym;
 
-  // Navigate to Summary tab immediately — shows loading state
+  // Show loading state on all three analysis pages and switch to Summary
   showAnalysisLoading(sym);
-  updatePageHero(sym, 'Loading...', null, null, 'analyzing', '⚡');
-  mainTab('summary', null);
+  updateAllHeroes(sym, 'Loading...', null, null, 'analyzing', '⚡ Analyzing...', 0, 'var(--green)');
+  mainTab('summary');
 
-  // Enable all analysis tabs in nav
+  // Enable analysis tabs in bottom nav
   ['summary','outlook','indicators'].forEach(t => {
     document.getElementById('bni-'+t)?.classList.add('has-data');
   });
@@ -2134,8 +3664,8 @@ async function openSheet(sym) {
   const px   = snap?.latestTrade?.p || snap?.dailyBar?.c;
   const pv   = snap?.prevDailyBar?.c;
 
-  // Update page hero with real data
-  updatePageHero(sym, companyName, px, pv, 'analyzing', '⚡ Analyzing...');
+  // Update hero with real price data while AI runs
+  updateAllHeroes(sym, companyName, px, pv, 'analyzing', '⚡ Analyzing...', 0, 'var(--green)');
 
   buildAnalysis(sym, snap, bars?.bars || [], analystData);
 }
@@ -2501,12 +4031,8 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   const recLabel = finalRec==='buy'?'▲ BUY':finalRec==='sell'?'▼ SELL':'⏸ HOLD';
   const confCol  = finalRec==='buy'?'#2DC653':finalRec==='sell'?'#E53E3E':'#D97706';
 
-  // Update page hero with final recommendation + confidence
-  updatePageHero(sym, document.getElementById('pgNm')?.textContent || sym, px, pv, finalRec, recLabel);
-  const pgCB = document.getElementById('pgConfBar');
-  const pgCP = document.getElementById('pgConfPct');
-  if (pgCB) { pgCB.style.width = conf+'%'; pgCB.style.background = confCol; }
-  if (pgCP) pgCP.textContent = conf+'% confident · GPT-4o';
+  // Update ALL THREE page heroes with final rec + confidence
+  updateAllHeroes(sym, document.getElementById('pgNm')?.textContent || sym, px, pv, finalRec, recLabel, conf, confCol);
 
   const sm = ai.aiSummary || {};
   const kl = sm.keyLevels || {};
@@ -3023,7 +4549,7 @@ function renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol,
   const recType  = (a50&&a200&&macd>0&&cp>0) ? 'buy' : (!a50&&!a200&&macd<0) ? 'sell' : 'hold';
   const recLabel = recType==='buy'?'▲ BUY':recType==='sell'?'▼ SELL':'⏸ HOLD';
   // Update page hero
-  updatePageHero(sym, document.getElementById('pgNm')?.textContent||sym, px, pv, recType, recLabel);
+  updateAllHeroes(sym, document.getElementById('pgNm')?.textContent||sym, px, pv, recType, recLabel, 50, confCol||'var(--amber)');
 
   const errBox = `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--amber);line-height:1.6">
     ⚠️ GPT-4o analysis unavailable — showing technical signals only. Check OPENAI_API_KEY in Render environment.
@@ -3042,36 +4568,71 @@ function renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol,
     </div>`;
 }
 
-// ── MAIN TAB NAVIGATION ───────────────────────────────────────────────────────
-// S.activeTab tracks which of the 4 main tabs is showing
-S.activeTab    = 'markets';
-S.stockLoaded  = false; // true after a stock has been analyzed
+// ── NAVIGATION STATE ──────────────────────────────────────────────────────────
+S.activeTab   = 'markets';
+S.stockLoaded = false;   // true after any stock has been analyzed
+S.lastSym     = null;    // last analyzed symbol — retained until new search
 
-function mainTab(name, el) {
-  // If trying to go to analysis tab before any stock is loaded, redirect to markets
+// ── MAIN TAB NAVIGATION ───────────────────────────────────────────────────────
+function mainTab(name) {
   if (['summary','outlook','indicators'].includes(name) && !S.stockLoaded) {
-    toast('Search a stock first to view analysis');
-    return;
+    toast('Search a stock first'); return;
   }
   S.activeTab = name;
+  const isMarkets = (name === 'markets');
 
-  // Update BOTTOM NAV
-  document.querySelectorAll('.bni').forEach(n=>n.classList.remove('on'));
-  if (el) el.classList.add('on');
-  else document.getElementById('bni-'+name)?.classList.add('on');
+  // Bottom nav active state
+  document.querySelectorAll('.bni').forEach(n => n.classList.remove('on'));
+  document.getElementById('bni-'+name)?.classList.add('on');
 
-  // Update INLINE TAB STRIP on hero
-  document.querySelectorAll('.pg-tab').forEach(t=>t.classList.remove('on'));
-  document.getElementById('pgtab-'+name)?.classList.add('on');
-
-  // Show/hide screens
-  const isMarkets = name === 'markets';
+  // Show/hide the four screens
   document.getElementById('scrl').style.display          = isMarkets ? '' : 'none';
   document.getElementById('pg-summary').style.display    = name==='summary'    ? 'flex' : 'none';
   document.getElementById('pg-outlook').style.display    = name==='outlook'    ? 'flex' : 'none';
   document.getElementById('pg-indicators').style.display = name==='indicators' ? 'flex' : 'none';
-  document.getElementById('stockHero').style.display     = isMarkets ? 'none' : 'block';
-  document.getElementById('hbtnSearch').style.display    = isMarkets ? 'none' : 'flex';
+
+  // Show/hide search icon in header
+  document.getElementById('hbtnSearch').style.display = isMarkets ? 'none' : 'flex';
+
+  // Sync all three tab strips
+  ['','B','C'].forEach(suffix => {
+    ['summary','outlook','indicators'].forEach(t => {
+      const el = document.getElementById('pgtab'+suffix+'-'+t);
+      if (el) el.classList.toggle('on', t === name);
+    });
+  });
+}
+
+// ── UPDATE ALL THREE HEROES with the same stock data ─────────────────────────
+function updateAllHeroes(sym, name, px, pv, recType, recLabel, conf, confCol) {
+  const suffixes = ['','B','C'];
+  const symIds   = ['pgSym','pgSymB','pgSymC'];
+  const nmIds    = ['pgNm', 'pgNmB', 'pgNmC'];
+  const pxIds    = ['pgPx', 'pgPxB', 'pgPxC'];
+  const chIds    = ['pgCh', 'pgChB', 'pgChC'];
+  const recIds   = ['pgRec','pgRecB','pgRecC'];
+  const barIds   = ['pgConfBar','pgConfBarB','pgConfBarC'];
+  const pctIds   = ['pgConfPct','pgConfPctB','pgConfPctC'];
+
+  symIds.forEach(id => {const el=document.getElementById(id); if(el) el.textContent=sym||'—';});
+  nmIds .forEach(id => {const el=document.getElementById(id); if(el) el.textContent=name||sym||'—';});
+
+  if (px) {
+    pxIds.forEach(id => {const el=document.getElementById(id); if(el) el.textContent='$'+parseFloat(px).toFixed(2);});
+    if (pv) {
+      const ch=px-pv, cp=(ch/pv)*100;
+      const txt=(ch>=0?'▲ +':'▼ ')+Math.abs(ch).toFixed(2)+' ('+Math.abs(cp).toFixed(2)+'%)';
+      const cls='pg-ch '+(ch>=0?'up':'dn');
+      chIds.forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=txt;el.className=cls;}});
+    }
+  }
+  if (recLabel) {
+    recIds.forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=recLabel;el.className='pg-rec '+(recType||'analyzing');}});
+  }
+  if (conf !== undefined && confCol) {
+    barIds.forEach(id=>{const el=document.getElementById(id);if(el){el.style.width=conf+'%';el.style.background=confCol;}});
+    pctIds.forEach(id=>{const el=document.getElementById(id);if(el) el.textContent=conf+'% · GPT-4o';});
+  }
 }
 
 function goSearch() {
@@ -3580,5 +5141,234 @@ renderMktHero();
 renderNewsSentiment();
 init();
 </script>
+</body>
+</html>"viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GFinHub — AI Stock Intelligence</title>
+
+<!-- ── PWA MANIFEST ── -->
+<link rel="manifest" href="/manifest.json">
+
+<!-- ── iOS PWA META TAGS ── -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GFinHub">
+<link rel="apple-touch-icon" href="/icon-512.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+
+<!-- ── ANDROID / CHROME PWA ── -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="GFinHub">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+<!-- ── THEME + SPLASH ── -->
+<meta name="theme-color" content="#1B2D5B">
+<meta name="msapplication-TileColor" content="#1B2D5B">
+<meta name="msapplication-TileImage" content="/icon-512.png">
+
+<!-- ── SEO + SOCIAL ── -->
+<meta name="description" content="Professional AI-powered stock analysis. Live market data, GPT-4o insights, institutional flow signals.">
+<meta property="og:title" content="GFinHub — AI Stock Intelligence">
+<meta property="og:description" content="Professional AI stock analysis powered by GPT-4o and live market data.">
+<meta property="og:type" content="website">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+
+</head>
+<body>
+<div class="app">
+
+  <!-- STATUS BAR -->
+  <div class="sbar">
+    <span class="sbar-time" id="clk">9:41</span>
+    <div class="sbar-r"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+  </div>
+
+  <!-- HEADER with GFinHub brand -->
+  <div class="header">
+    <div class="hrow">
+      <div class="logo-wrap">
+        <!-- GFinHub logo precision SVG — white background, exact match to uploaded file -->
+        <svg class="logo-svg" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gBars" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%"   stop-color="#1A6B30"/>
+              <stop offset="100%" stop-color="#2EBF4E"/>
+            </linearGradient>
+            <linearGradient id="gArrow" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#1A6B30"/>
+              <stop offset="100%" stop-color="#2EBF4E"/>
+            </linearGradient>
+          </defs>
+
+          <!--
+            G SHAPE — solid filled navy, thick bold letter
+            Outer circle radius ~40, inner ~26, center ~(44,45)
+            Open gap on right side between ~30deg and ~90deg (1 o'clock to 3 o'clock)
+            Crossbar shelf extends inward from middle-right
+          -->
+          <path d="
+            M 44 6
+            A 38 38 0 1 0 79 58
+            L 79 47
+            L 57 47
+            L 57 55
+            L 70 55
+            A 24 24 0 1 1 70 35
+            L 79 35
+            L 79 22
+            C 70 12 57 6 44 6
+            Z
+          " fill="#1C2E5C"/>
+
+          <!--
+            4 BAR CHART BARS — bottom-aligned, inside lower G opening
+            Bar1: dark navy (not green), shortest
+            Bars 2-4: green gradient, increasing height
+          -->
+          <rect x="22" y="62" width="8"  height="14" rx="1.5" fill="#1C2E5C"/>
+          <rect x="32" y="54" width="8"  height="22" rx="1.5" fill="url(#gBars)"/>
+          <rect x="42" y="45" width="8"  height="31" rx="1.5" fill="url(#gBars)"/>
+          <rect x="52" y="36" width="8"  height="40" rx="1.5" fill="url(#gBars)"/>
+
+          <!--
+            SWOOPING GREEN ARROW
+            Wide elegant S-curve: starts lower-left of G, sweeps through bar area,
+            exits upper-right of G opening. Arrowhead at tip pointing ~45deg.
+          -->
+          <path d="M 14 78  C 22 68  36 58  50 46  C 60 36  67 27  73 17"
+                stroke="url(#gArrow)"
+                stroke-width="5.5"
+                fill="none"
+                stroke-linecap="round"/>
+          <polygon points="73,17  60,22  67,33" fill="#2EBF4E"/>
+        </svg>
+        <div style="margin-left:4px">
+          <div class="brand-text">
+            <span class="brand-fin">FIN</span><span class="brand-hub">HUB</span>
+          </div>
+          <div class="brand-sub">AI STOCK INTELLIGENCE</div>
+        </div>
+      </div>
+      <div class="hbtn" onclick="goSearch()" id="hbtnSearch" style="display:none" title="New Search">🔍</div>
+      <div class="hbtn" onclick="refreshAll()" title="Refresh">↻</div>
+    </div>
+  </div>
+
+  <!-- SCROLL AREA -->
+  <div class="scroll" id="scrl">
+
+    <!-- CONN BANNER -->
+    <div class="conn warn" id="connBar" style="margin-bottom:10px">
+      <div class="conn-dot a" id="connDot"></div>
+      <div class="conn-tx">
+        <span class="conn-title" id="connTitle">Connecting to server...</span>
+        <span class="conn-sub" id="connSub">Initializing GFinHub AI engine</span>
+      </div>
+    </div>
+
+    <!-- ── SEARCH FIRST ── -->
+    <div class="sec-title">Search & Analyze</div>
+    <div class="search-card">
+      <div class="search-row" style="position:relative">
+        <div class="search-inp-wrap" id="searchWrap">
+          <span style="font-size:15px;color:var(--t3)" id="searchIcon">🔍</span>
+          <input type="text" id="tickIn"
+            placeholder="Search by name or ticker — Apple, NVDA, Tesla..."
+            maxlength="40"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            oninput="onSearchInput(this.value)"
+            onkeydown="onSearchKey(event)"
+            onfocus="onSearchFocus()"
+            onblur="onSearchBlur()"/>
+          <span id="searchClear" style="display:none;font-size:16px;color:var(--t3);cursor:pointer;padding:4px;flex-shrink:0" onclick="clearSearch()">✕</span>
+        </div>
+        <button class="search-go" id="searchBtn" onclick="doSearch()">Analyze</button>
+      </div>
+      <!-- DROPDOWN RESULTS -->
+      <div id="searchDropdown" class="search-dropdown" style="display:none"></div>
+      <!-- QUICK CHIPS -->
+      <div class="chips" id="chips">
+        <div class="chip on"  onclick="chipTap(this,'NVDA')">NVDA</div>
+        <div class="chip" onclick="chipTap(this,'AAPL')">AAPL</div>
+        <div class="chip" onclick="chipTap(this,'TSLA')">TSLA</div>
+        <div class="chip" onclick="chipTap(this,'META')">META</div>
+        <div class="chip" onclick="chipTap(this,'MSFT')">MSFT</div>
+        <div class="chip" onclick="chipTap(this,'AMD')">AMD</div>
+        <div class="chip" onclick="chipTap(this,'SPY')">SPY</div>
+      </div>
+    </div>
+
+    <!-- MARKET STATUS STRIP -->
+    <div class="mkt-strip" id="mktStrip">
+      <div class="mkt-chip"><div class="mkt-dot" style="background:var(--amber)"></div>Market loading...</div>
+    </div>
+
+    <!-- ── MARKET DIRECTION ── -->
+    <div class="sec-title">Market Direction</div>
+    <div id="mktHeroGrid">
+      <div style="display:flex;align-items:center;justify-content:center;padding:24px;background:var(--card);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px"><div class="spin"></div></div>
+    </div>
+
+    <!-- ── NEWS SENTIMENT ── -->
+    <div class="sec-title" style="margin-top:4px">News Sentiment</div>
+    <div id="newsSentiment"></div>
+
+    <!-- ── DISCLAIMER ── -->
+    <div class="disclaimer">
+      <div class="disc-title">⚠️ Important Disclaimer</div>
+      <div class="disc-body">
+        GFinHub is an AI-powered stock analysis and information platform. All content, analysis, signals, projections, and recommendations provided are for <strong>informational and educational purposes only</strong> and do not constitute financial advice, investment advice, or a recommendation to buy, sell, or hold any security.<br><br>
+        Investing in financial markets involves significant risk, including the possible loss of principal. Past performance and technical signals are not guarantees of future results. You should conduct your own independent research and consult a qualified financial advisor before making any investment decisions.<br><br>
+        GFinHub is not a registered investment advisor. Market data is sourced from Alpaca Markets and may be delayed. All analysis is generated by AI and may contain errors or inaccuracies.
+      </div>
+      <div class="disc-footer">© 2026 GFinHub · Not FDIC insured · Not a broker-dealer · For informational use only</div>
+    </div>
+
+  </div><!-- /scroll -->
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<div class="bnav" id="bnav">
+  <div class="bni on" id="bni-markets" onclick="mainTab('markets',this)">
+    <span class="bni-ic">📊</span>Markets
+  </div>
+  <div class="bni" id="bni-summary" onclick="mainTab('summary',this)">
+    <span class="bni-ic">🧠</span>Summary
+  </div>
+  <div class="bni" id="bni-outlook" onclick="mainTab('outlook',this)">
+    <span class="bni-ic">📅</span>Outlook
+  </div>
+  <div class="bni" id="bni-indicators" onclick="mainTab('indicators',this)">
+    <span class="bni-ic">📈</span>Indicators
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+  ANALYSIS PAGES
+  Each page = full-screen flex column:
+    [navy spacer — same height as sbar+header]
+    [stock hero bar — in flow, scrolls to top, NEVER FLOATS]
+    [tab strip — in flow, always visible below hero]
+    [pg-scroll — fills rest, user scrolls content here]
+  No position:fixed, no z-index tricks, no spacer hacks.
+══════════════════════════════════════════════════════ -->
+
+<!-- shared stock-hero snippet duplicated into each page so it is IN THE FLOW -->
+<!-- ── PWA UPDATE BANNER ── -->
+<div class="update-banner" id="updateBanner">
+  <div class="update-banner-text">
+    <strong>✨ Update Available</strong>
+    <span>GFinHub has been updated. Tap to reload.</span>
+  </div>
+  <button class="update-btn" onclick="applyUpdate()">Update Now</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
 </body>
 </html>
