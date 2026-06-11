@@ -156,7 +156,7 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 /* ── SCROLL ── */
 .scroll {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 12px 14px 90px;
+  padding: 12px 14px 100px;
 }
 .scroll::-webkit-scrollbar { display: none; }
 
@@ -361,63 +361,197 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 .sc-spark { height: 32px; margin-top: 10px; }
 .sc-spark svg { width: 100%; height: 100%; }
 
-/* ── BOTTOM NAV ── */
+/* ── BOTTOM NAV (4 tabs) ── */
 .bnav {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: var(--w); background: var(--card);
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: var(--w);
+  background: var(--card);
   border-top: 1px solid var(--border);
   display: flex; z-index: 50;
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 20px rgba(27,45,91,.08);
 }
-@media(max-width:420px){ .bnav { width: 100%; left: 0; transform: none; } }
+@media(max-width:420px){ .bnav { width:100%; left:0; transform:none; } }
 .bni {
   flex: 1; display: flex; flex-direction: column; align-items: center;
   padding: 10px 0 12px; cursor: pointer; gap: 3px;
-  font-size: 9px; font-weight: 700; letter-spacing: .04em;
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
   text-transform: uppercase; color: var(--t3);
   transition: all .15s; font-family: var(--sans);
+  -webkit-tap-highlight-color: transparent;
 }
 .bni.on { color: var(--navy); }
-.bni:active { transform: scale(.9); }
+.bni.on .bni-ic { filter: drop-shadow(0 2px 6px rgba(27,45,91,.25)); }
+.bni:active { transform: scale(.88); }
 .bni-ic { font-size: 20px; }
-.bni.on .bni-ic { filter: drop-shadow(0 2px 6px rgba(27,45,91,.3)); }
-
-/* ── DETAIL SHEET ── */
-.bdrop {
-  position: fixed; inset: 0;
-  background: rgba(15,30,64,.4);
-  z-index: 80; display: none;
-  backdrop-filter: blur(3px);
+/* Badge on analysis tabs when stock is loaded */
+.bni.has-data { color: var(--t2); }
+.bni.has-data.on { color: var(--navy); }
+/* Small dot indicator on analysis tabs when data is loaded */
+.bni.has-data .bni-ic::after {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-left: 2px;
+  vertical-align: top;
+  margin-top: 2px;
 }
-.bdrop.on { display: block; }
 
-.sheet {
-  position: fixed; bottom: 0; left: 50%;
-  transform: translateX(-50%) translateY(102%);
-  width: var(--w); max-height: 92vh;
+/* ── FULL-SCREEN PAGES ── */
+.pg-screen {
+  position: fixed;
+  top: 0; left: 50%; bottom: 0;
+  width: var(--w);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
-  border-radius: 22px 22px 0 0;
-  border-top: 1px solid var(--border);
-  z-index: 90;
-  transition: transform .34s cubic-bezier(.32,.72,0,1);
+  z-index: 10;
+  overflow: hidden;
+}
+@media(max-width:420px){ .pg-screen { width:100%; left:0; transform:none; } }
+
+.pg-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 14px 100px;
+}
+.pg-scroll::-webkit-scrollbar { display: none; }
+
+/* Stock hero strip — fixed inside each pg-screen */
+#stockHero {
+  position: fixed;
+  top: 0; left: 50%;
+  width: var(--w);
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: none;
+}
+@media(max-width:420px){ #stockHero { width:100%; left:0; transform:none; } }
+#stockHeroInner {
+  margin-top: 100px; /* below sbar + header */
+  pointer-events: all;
+}
+.pg-tab-strip {
+  display: flex;
+  background: var(--navy);
+  border-bottom: 2px solid rgba(255,255,255,.1);
+}
+.pg-tab {
+  flex: 1;
+  text-align: center;
+  padding: 9px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pg-tab.on { color: #fff; border-bottom-color: var(--green); }
+.pg-tab:active { opacity: .7; }
+
+.pg-hero {
+  background: var(--navy);
+  padding: 10px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid rgba(255,255,255,.08);
+  pointer-events: all;
+}
+.pg-hero-left { flex: 1; min-width: 0; }
+.pg-sym {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.2px;
+  line-height: 1.1;
+}
+.pg-nm {
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pg-hero-right { text-align: right; }
+.pg-px {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+.pg-ch {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.pg-ch.up { color: var(--green-l); }
+.pg-ch.dn { color: #FC8181; }
+.pg-rec {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pg-rec.buy      { background: var(--green-bg); color: var(--green-l); border: 1px solid rgba(45,198,83,.3); }
+.pg-rec.hold     { background: var(--amber-bg); color: #FFB020;         border: 1px solid rgba(217,119,6,.3); }
+.pg-rec.sell     { background: var(--red-bg);   color: #FC8181;         border: 1px solid rgba(229,62,62,.3); }
+.pg-rec.analyzing{ background: rgba(255,255,255,.08); color:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.12); }
+
+/* Hero height — used to push page content below */
+.pg-hero-spacer { height: 170px; flex-shrink: 0; }
+
+/* Empty state shown on analysis tabs before search */
+.pg-empty {
   display: flex; flex-direction: column;
-  box-shadow: var(--shadow-lg);
+  align-items: center; justify-content: center;
+  flex: 1; padding: 40px 24px;
+  text-align: center;
 }
-.sheet.on { transform: translateX(-50%) translateY(0); }
-@media(max-width:420px) {
-  .sheet { width: 100%; left: 0; transform: translateY(102%); }
-  .sheet.on { transform: translateY(0); }
+.pg-empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
+.pg-empty-title { font-size: 17px; font-weight: 700; color: var(--t2); margin-bottom: 8px; }
+.pg-empty-sub { font-size: 13px; color: var(--t3); line-height: 1.6; }
+
+/* Loading state inside pages */
+.pg-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  gap: 12px;
+  text-align: center;
 }
-.sh-handle {
-  width: 36px; height: 4px; background: var(--border2);
-  border-radius: 2px; margin: 10px auto 0; flex-shrink: 0;
+.pg-loading-title { font-size: 15px; font-weight: 700; color: var(--tx); margin-bottom: 4px; }
+.pg-loading-sub { font-size: 12px; color: var(--t2); line-height: 1.65; }
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 24px; gap: 14px; text-align: center;
 }
-.sh-scroll {
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
-  flex: 1; padding-bottom: 24px;
-}
-.sh-scroll::-webkit-scrollbar { display: none; }
+.pg-loading-title { font-size: 14px; font-weight: 700; color: var(--tx); }
+.pg-loading-sub { font-size: 12px; color: var(--t2); line-height: 1.6; }
+
+/* ── SHEET (keep class for JS compat but invisible) ── */
+.bdrop { display: none !important; }
+.sheet { display: none !important; }
 
 /* sheet hero */
 .sh-hero {
@@ -1257,6 +1391,7 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
           <div class="brand-sub">AI STOCK INTELLIGENCE</div>
         </div>
       </div>
+      <div class="hbtn" onclick="goSearch()" id="hbtnSearch" style="display:none" title="New Search">🔍</div>
       <div class="hbtn" onclick="refreshAll()" title="Refresh">↻</div>
     </div>
   </div>
@@ -1337,101 +1472,91 @@ body { font-family: var(--sans); display: flex; justify-content: center; }
 </div><!-- /app -->
 
 <!-- BOTTOM NAV -->
-<div class="bnav">
-  <div class="bni on" onclick="navTap(this)"><span class="bni-ic">📊</span>Markets</div>
-  <div class="bni" onclick="navTap(this)"><span class="bni-ic">🔍</span>Research</div>
-  <div class="bni" onclick="navTap(this)"><span class="bni-ic">📡</span>Signals</div>
-  <div class="bni" onclick="navTap(this)"><span class="bni-ic">⚙️</span>Settings</div>
+<div class="bnav" id="bnav">
+  <div class="bni on" id="bni-markets" onclick="mainTab('markets',this)">
+    <span class="bni-ic">📊</span>Markets
+  </div>
+  <div class="bni" id="bni-summary" onclick="mainTab('summary',this)">
+    <span class="bni-ic">🧠</span>Summary
+  </div>
+  <div class="bni" id="bni-outlook" onclick="mainTab('outlook',this)">
+    <span class="bni-ic">📅</span>Outlook
+  </div>
+  <div class="bni" id="bni-indicators" onclick="mainTab('indicators',this)">
+    <span class="bni-ic">📈</span>Indicators
+  </div>
 </div>
 
-<!-- DETAIL SHEET -->
-<div class="bdrop" id="bdrop" onclick="closeSheet()"></div>
-<div class="sheet" id="sheet">
-  <div class="sh-handle"></div>
-  <div class="sh-scroll">
-
-    <!-- HERO -->
-    <div class="sh-hero">
-      <div class="sh-hero-row">
-        <div>
-          <div class="sh-sym" id="shSym">—</div>
-          <div class="sh-nm"  id="shNm">Loading...</div>
-        </div>
-        <div class="sh-rec-big buy" id="shRec">— —</div>
+<!-- STOCK HERO STRIP — shown on all analysis tabs, positioned below sbar+header -->
+<div id="stockHero" style="display:none">
+  <!-- Offset spacer to push hero below sbar + header -->
+  <div id="stockHeroInner">
+    <div class="pg-hero" id="pgHero">
+      <div class="pg-hero-left">
+        <div class="pg-sym" id="pgSym">—</div>
+        <div class="pg-nm"  id="pgNm">Loading...</div>
       </div>
-      <div class="sh-px-row">
-        <div class="sh-px" id="shPx">—</div>
-        <div class="sh-ch up" id="shCh">—</div>
+      <div class="pg-hero-right">
+        <div class="pg-px" id="pgPx">—</div>
+        <div class="pg-ch" id="pgCh">—</div>
       </div>
-      <div class="sh-updated" id="shUpd">Analyzing...</div>
-      <div class="conf-wrap">
-        <div class="conf-label">
-          <span>AI Confidence</span>
-          <span id="shConfPct">—</span>
-        </div>
-        <div class="conf-track">
-          <div class="conf-fill" id="shConfBar" style="width:0%"></div>
-        </div>
-      </div>
+      <div class="pg-rec analyzing" id="pgRec">⚡</div>
     </div>
-
-    <!-- TABS -->
-    <div class="sh-tabs">
-      <div class="sh-tab on"  onclick="shTab(this,'summary')">Summary</div>
-      <div class="sh-tab"     onclick="shTab(this,'outlook')">Outlook</div>
-      <div class="sh-tab"     onclick="shTab(this,'indicators')">Indicators</div>
-    </div>
-
-    <!-- ── SUMMARY PANE ── -->
-    <div class="sh-pane on" id="sh-summary">
-
-      <!-- ── AI INTELLIGENCE SUMMARY ── -->
-      <div id="shAISummary">
-        <!-- Populated by renderAIAnalysis() -->
+    <!-- Confidence bar strip -->
+    <div id="pgConfRow" style="background:var(--navy);padding:0 16px 10px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden">
+        <div id="pgConfBar" style="height:100%;width:0%;background:var(--green);border-radius:2px;transition:width .5s"></div>
       </div>
-
-      <!-- ── QUICK STATS ── -->
-      <div class="stats-grid" id="shStats"></div>
-
-      <!-- ── ANALYST CONSENSUS ── -->
-      <div class="ind-card">
-        <div class="ind-card-hd">Analyst Consensus</div>
-        <div id="shAnalyst" style="padding:14px"></div>
-      </div>
-
+      <div id="pgConfPct" style="font-size:10px;font-weight:700;color:rgba(255,255,255,.5);font-family:var(--mono);white-space:nowrap">GPT-4o</div>
     </div>
+    <!-- Tab strip on the hero -->
+    <div class="pg-tab-strip">
+      <div class="pg-tab on" id="pgtab-summary"   onclick="mainTab('summary',null)">Summary</div>
+      <div class="pg-tab"     id="pgtab-outlook"   onclick="mainTab('outlook',null)">Outlook</div>
+      <div class="pg-tab"     id="pgtab-indicators"onclick="mainTab('indicators',null)">Indicators</div>
+    </div>
+  </div>
+</div>
 
-    <!-- ── OUTLOOK PANE ── -->
-    <div class="sh-pane" id="sh-outlook">
+<!-- PAGE: SUMMARY -->
+<div class="pg-screen" id="pg-summary" style="display:none">
+  <div class="pg-scroll">
+    <div class="pg-hero-spacer"></div>
+    <div id="shAISummary" style="padding-top:10px"></div>
+    <div class="stats-grid" style="padding:0 0 0" id="shStats"></div>
+    <div class="ind-card" style="margin:8px 0 10px">
+      <div class="ind-card-hd">Analyst Consensus</div>
+      <div id="shAnalyst" style="padding:14px"></div>
+    </div>
+  </div>
+</div>
 
-      <!-- TODAY'S OUTLOOK -->
+<!-- PAGE: OUTLOOK -->
+<div class="pg-screen" id="pg-outlook" style="display:none">
+  <div class="pg-scroll">
+    <div class="pg-hero-spacer"></div>
+    <div style="padding-top:10px">
       <div id="shTodayCard"></div>
-
-      <!-- THIS WEEK'S OUTLOOK -->
       <div id="shWeekCard"></div>
-
-      <!-- 3 MONTH TARGETS -->
-      <div class="sh-section-label" style="margin-bottom:8px">3-Month Price Targets</div>
+      <div class="sh-section-label" style="margin:4px 0 8px">3-Month Price Targets</div>
       <div class="targets" id="shTargets"></div>
-
-      <div class="cat-card" id="shBull">
-        <div class="cat-card-hd bull">📈 What's driving it higher</div>
+      <div class="cat-card" style="margin-bottom:8px" id="shBull">
+        <div class="cat-card-hd bull">📈 What could drive price higher</div>
       </div>
-      <div class="spacer"></div>
-      <div class="cat-card" id="shBear">
+      <div class="cat-card" style="margin-bottom:24px" id="shBear">
         <div class="cat-card-hd bear">⚠️ Key risks to watch</div>
       </div>
-
     </div>
+  </div>
+</div>
 
-    <!-- ── INDICATORS PANE ── -->
-    <div class="sh-pane" id="sh-indicators">
-      <div class="sh-section-label" style="margin-bottom:8px">Core Technical Signals</div>
-      <div id="shInds"></div>
-    </div>
-
-  </div><!-- /sh-scroll -->
-</div><!-- /sheet -->
+<!-- PAGE: INDICATORS -->
+<div class="pg-screen" id="pg-indicators" style="display:none">
+  <div class="pg-scroll">
+    <div class="pg-hero-spacer"></div>
+    <div id="shInds" style="padding-top:10px"></div>
+  </div>
+</div>
 
 <!-- ── PWA UPDATE BANNER ── -->
 <div class="update-banner" id="updateBanner">
@@ -1981,25 +2106,20 @@ function getQuickRec(px, pv, vwap, sym) {
 
 // ── OPEN SHEET ────────────────────────────────────────────────────────────────
 async function openSheet(sym) {
-  S.selected = sym;
+  S.selected   = sym;
+  S.stockLoaded = true;
 
-  // Reset header — show ticker immediately, fetch company name
-  document.getElementById('shSym').textContent  = sym;
-  document.getElementById('shNm').textContent   = 'Loading...';
-  document.getElementById('shRec').textContent  = '⚡ Analyzing...';
-  document.getElementById('shRec').className    = 'sh-rec-big analyzing';
-  document.getElementById('shPx').textContent   = '—';
-  document.getElementById('shUpd').textContent  = 'GFinHub AI engine running...';
-  document.getElementById('shConfBar').style.width = '0%';
-  document.getElementById('shConfPct').textContent = '—';
-
-  document.getElementById('sheet').classList.add('on');
-  document.getElementById('bdrop').classList.add('on');
-
-  // Show loading animation immediately
+  // Navigate to Summary tab immediately — shows loading state
   showAnalysisLoading(sym);
+  updatePageHero(sym, 'Loading...', null, null, 'analyzing', '⚡');
+  mainTab('summary', null);
 
-  // Fetch quote, bars (220 days for real SMA50/200), asset info, analyst data in parallel
+  // Enable all analysis tabs in nav
+  ['summary','outlook','indicators'].forEach(t => {
+    document.getElementById('bni-'+t)?.classList.add('has-data');
+  });
+
+  // Fetch everything in parallel
   const [quoteData, bars, assetData, analystData] = await Promise.all([
     S.quotes[sym] ? Promise.resolve(null) : api(`/api/quotes?symbols=${sym}`),
     api(`/api/bars/${sym}?timeframe=1D&limit=220`),
@@ -2009,33 +2129,20 @@ async function openSheet(sym) {
 
   if (quoteData?.[sym]) S.quotes[sym] = quoteData[sym];
 
-  // Set company name — use Alpaca asset name, fall back to known list, then ticker
   const companyName = assetData?.name || tname(sym);
-  document.getElementById('shNm').textContent = companyName;
-
   const snap = S.quotes[sym];
   const px   = snap?.latestTrade?.p || snap?.dailyBar?.c;
   const pv   = snap?.prevDailyBar?.c;
 
-  if (px) {
-    document.getElementById('shPx').textContent = '$' + px.toFixed(2);
-    if (pv) {
-      const ch = px-pv, cp = (ch/pv)*100;
-      const el = document.getElementById('shCh');
-      el.textContent = `${ch>=0?'▲ +':'▼ '}${Math.abs(ch).toFixed(2)} (${Math.abs(cp).toFixed(2)}%)`;
-      el.className   = `sh-ch ${ch>=0?'up':'dn'}`;
-    }
-    document.getElementById('shUpd').textContent =
-      `Last updated ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
-  }
+  // Update page hero with real data
+  updatePageHero(sym, companyName, px, pv, 'analyzing', '⚡ Analyzing...');
 
   buildAnalysis(sym, snap, bars?.bars || [], analystData);
 }
 
 function closeSheet() {
-  document.getElementById('sheet').classList.remove('on');
-  document.getElementById('bdrop').classList.remove('on');
-  S.selected = null;
+  // No-op — kept for any legacy calls; use mainTab('markets') instead
+  mainTab('markets', null);
 }
 
 // ── DYNAMIC MA CACHE — populated from real bar data, not hardcoded ─────────────
@@ -2259,7 +2366,7 @@ async function buildAnalysis(sym, snap, bars, analystData) {
   })) || [];
 
   // Company name
-  const companyName = document.getElementById('shNm').textContent || sym;
+  const companyName = document.getElementById('pgNm')?.textContent || tname(sym) || sym;
 
   // Show stats immediately while AI loads
   const a50  = px > ma.ma50;
@@ -2394,12 +2501,12 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   const recLabel = finalRec==='buy'?'▲ BUY':finalRec==='sell'?'▼ SELL':'⏸ HOLD';
   const confCol  = finalRec==='buy'?'#2DC653':finalRec==='sell'?'#E53E3E':'#D97706';
 
-  // Hero
-  document.getElementById('shRec').textContent = recLabel;
-  document.getElementById('shRec').className   = `sh-rec-big ${finalRec}`;
-  document.getElementById('shConfBar').style.width      = conf+'%';
-  document.getElementById('shConfBar').style.background = confCol;
-  document.getElementById('shConfPct').textContent      = conf+'% · GPT-4o';
+  // Update page hero with final recommendation + confidence
+  updatePageHero(sym, document.getElementById('pgNm')?.textContent || sym, px, pv, finalRec, recLabel);
+  const pgCB = document.getElementById('pgConfBar');
+  const pgCP = document.getElementById('pgConfPct');
+  if (pgCB) { pgCB.style.width = conf+'%'; pgCB.style.background = confCol; }
+  if (pgCP) pgCP.textContent = conf+'% confident · GPT-4o';
 
   const sm = ai.aiSummary || {};
   const kl = sm.keyLevels || {};
@@ -2915,10 +3022,8 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
 function renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol, s1, r1, bbU, bbL, bars) {
   const recType  = (a50&&a200&&macd>0&&cp>0) ? 'buy' : (!a50&&!a200&&macd<0) ? 'sell' : 'hold';
   const recLabel = recType==='buy'?'▲ BUY':recType==='sell'?'▼ SELL':'⏸ HOLD';
-  const recEl = document.getElementById('shRec');
-  recEl.textContent = recLabel;
-  recEl.className   = `sh-rec-big ${recType}`;
-  document.getElementById('shConfPct').textContent = 'Technical signals only';
+  // Update page hero
+  updatePageHero(sym, document.getElementById('pgNm')?.textContent||sym, px, pv, recType, recLabel);
 
   const errBox = `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--amber);line-height:1.6">
     ⚠️ GPT-4o analysis unavailable — showing technical signals only. Check OPENAI_API_KEY in Render environment.
@@ -2937,17 +3042,88 @@ function renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol,
     </div>`;
 }
 
-function navTap(el) {
+// ── MAIN TAB NAVIGATION ───────────────────────────────────────────────────────
+// S.activeTab tracks which of the 4 main tabs is showing
+S.activeTab    = 'markets';
+S.stockLoaded  = false; // true after a stock has been analyzed
+
+function mainTab(name, el) {
+  // If trying to go to analysis tab before any stock is loaded, redirect to markets
+  if (['summary','outlook','indicators'].includes(name) && !S.stockLoaded) {
+    toast('Search a stock first to view analysis');
+    return;
+  }
+  S.activeTab = name;
+
+  // Update BOTTOM NAV
   document.querySelectorAll('.bni').forEach(n=>n.classList.remove('on'));
-  el.classList.add('on');
+  if (el) el.classList.add('on');
+  else document.getElementById('bni-'+name)?.classList.add('on');
+
+  // Update INLINE TAB STRIP on hero
+  document.querySelectorAll('.pg-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('pgtab-'+name)?.classList.add('on');
+
+  // Show/hide screens
+  const isMarkets = name === 'markets';
+  document.getElementById('scrl').style.display          = isMarkets ? '' : 'none';
+  document.getElementById('pg-summary').style.display    = name==='summary'    ? 'flex' : 'none';
+  document.getElementById('pg-outlook').style.display    = name==='outlook'    ? 'flex' : 'none';
+  document.getElementById('pg-indicators').style.display = name==='indicators' ? 'flex' : 'none';
+  document.getElementById('stockHero').style.display     = isMarkets ? 'none' : 'block';
+  document.getElementById('hbtnSearch').style.display    = isMarkets ? 'none' : 'flex';
 }
 
-function shTab(el, name) {
-  document.querySelectorAll('.sh-tab').forEach(t=>t.classList.remove('on'));
-  document.querySelectorAll('.sh-pane').forEach(p=>p.classList.remove('on'));
-  el.classList.add('on');
-  const pane = document.getElementById('sh-'+name);
-  if (pane) pane.classList.add('on');
+function goSearch() {
+  mainTab('markets', null);
+  setTimeout(() => {
+    document.getElementById('tickIn')?.focus();
+    document.getElementById('scrl')?.scrollTo({top:0,behavior:'smooth'});
+  }, 100);
+}
+
+// ── shTab kept for back-compat but now does nothing (single-page tabs) ─────────
+function shTab(el, name) { /* no-op — replaced by mainTab */ }
+
+// ── UPDATE ANALYSIS PAGE HERO ─────────────────────────────────────────────────
+function updatePageHero(sym, name, px, pv, recType, recLabel) {
+  document.getElementById('pgSym').textContent = sym;
+  document.getElementById('pgNm').textContent  = name || sym;
+  if (px) {
+    document.getElementById('pgPx').textContent = '$'+parseFloat(px).toFixed(2);
+    if (pv) {
+      const ch = px-pv, cp = (ch/pv)*100;
+      const el = document.getElementById('pgCh');
+      el.textContent = `${ch>=0?'▲ +':'▼ '}${Math.abs(ch).toFixed(2)} (${Math.abs(cp).toFixed(2)}%)`;
+      el.className = `pg-ch ${ch>=0?'up':'dn'}`;
+    }
+  }
+  const recEl = document.getElementById('pgRec');
+  recEl.textContent = recLabel || '⚡';
+  recEl.className   = `pg-rec ${recType||'analyzing'}`;
+}
+
+// ── SHOW LOADING STATE ON ALL THREE ANALYSIS PAGES ────────────────────────────
+function showAnalysisLoading(sym) {
+  const loadHtml = `
+    <div class="pg-loading">
+      <div style="position:relative;width:48px;height:48px;margin-bottom:4px">
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid var(--border)"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:var(--navy);animation:sp .8s linear infinite"></div>
+      </div>
+      <div class="pg-loading-title">GPT-4o is analyzing ${sym}</div>
+      <div class="pg-loading-sub">Fetching live data · Computing indicators<br>Generating AI insights · 5–10 seconds</div>
+    </div>`;
+
+  document.getElementById('shAISummary').innerHTML = loadHtml;
+  document.getElementById('shStats').innerHTML     = '';
+  document.getElementById('shAnalyst').innerHTML   = loadHtml;
+  document.getElementById('shTodayCard').innerHTML = loadHtml;
+  document.getElementById('shWeekCard').innerHTML  = loadHtml;
+  document.getElementById('shTargets').innerHTML   = '';
+  document.getElementById('shBull').innerHTML = '<div class="cat-card-hd bull">📈 What could drive price higher</div>';
+  document.getElementById('shBear').innerHTML = '<div class="cat-card-hd bear">⚠️ Key risks to watch</div>';
+  document.getElementById('shInds').innerHTML = loadHtml;
 }
 
 // ── STOCK DATABASE — 300+ stocks searchable by ticker or name ────────────────
