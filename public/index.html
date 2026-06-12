@@ -73,7 +73,8 @@ body {
 /* The entire app lives in one 390px flex column */
 #app {
   width: var(--w);
-  height: 100svh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -81,7 +82,7 @@ body {
   background: var(--bg);
 }
 @media (max-width: 430px) {
-  #app { width: 100vw; height: 100svh; }
+  #app { width: 100vw; }
 }
 
 /* ── STATUS BAR ────────────────────────────── */
@@ -91,8 +92,8 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px 6px;
+  padding-top: max(8px, env(safe-area-inset-top));
   flex-shrink: 0;
-  height: 28px;
 }
 .sbar-time { font-family: var(--mono); font-size: 12px; font-weight: 600; color: #fff; }
 .sbar-r    { display: flex; gap: 6px; font-size: 10px; color: rgba(255,255,255,.7); align-items: center; }
@@ -134,7 +135,7 @@ body {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 12px 14px 90px;
+  padding: 12px 14px calc(72px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -212,7 +213,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 14px 14px 90px;
+  padding: 14px 14px calc(72px + env(safe-area-inset-bottom));
 }
 .pg-scroll::-webkit-scrollbar { display: none; }
 /* Loading state */
@@ -229,7 +230,8 @@ body {
   width: var(--w);
   background: #fff; border-top: 1.5px solid var(--border);
   display: flex; z-index: 100;
-  padding-bottom: env(safe-area-inset-bottom);
+  /* Safe area for iPhone home indicator */
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
   box-shadow: 0 -4px 20px rgba(27,45,91,.1);
 }
 @media (max-width: 430px) {
@@ -448,7 +450,7 @@ body {
 /* Stats grid */
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 .stat-card  { background: var(--card); border-radius: var(--r-sm); border: 1px solid var(--border); padding: 10px 8px; text-align: center; box-shadow: var(--shadow); }
-.stat-lbl   { font-size: 10px; font-weight: 700; color: var(--t3); font-family: var(--mono); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-lbl, .stat-label { font-size: 10px; font-weight: 700; color: var(--t3); font-family: var(--mono); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 4px; }
 .stat-val   { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--tx); }
 .stat-val.g { color: var(--green-d); }
 .stat-val.r { color: var(--red); }
@@ -1611,7 +1613,7 @@ async function buildAnalysis(sym, snap, bars, analystData) {
   })) || [];
 
   // Company name
-  const companyName = document.getElementById('pgNm')?.textContent || tname(sym) || sym;
+  const companyName = document.getElementById('pgNmA')?.textContent?.replace(/.*— /,'') || tname(sym) || sym;
 
   // Show stats immediately while AI loads
   const a50  = px > ma.ma50;
@@ -2056,7 +2058,7 @@ function renderAIAnalysis(sym, px, pv, cp, ai, rsi, a50, a200, vwapA, atr, rvol,
   const confCol  = finalRec==='buy'?'#2DC653':finalRec==='sell'?'#E53E3E':'#D97706';
 
   // Update ALL THREE page heroes with final rec + confidence
-  updateAllHeroes(sym, document.getElementById('pgNm')?.textContent || sym, px, pv, finalRec, recLabel, conf, confCol);
+  updateAllHeroes(sym, (document.getElementById('pgNmA')?.textContent?.replace(/.*— /,''))||sym, px, pv, finalRec, recLabel, conf, confCol);
 
   const sm = ai.aiSummary || {};
   const kl = sm.keyLevels || {};
@@ -2574,7 +2576,7 @@ function renderFallback(sym, px, pv, cp, rsi, a50, a200, vwapA, macd, atr, rvol,
   const recType  = (a50&&a200&&macd>0&&cp>0) ? 'buy' : (!a50&&!a200&&macd<0) ? 'sell' : 'hold';
   const recLabel = recType==='buy'?'▲ BUY':recType==='sell'?'▼ SELL':'⏸ HOLD';
   // Update page hero
-  updateAllHeroes(sym, document.getElementById('pgNm')?.textContent||sym, px, pv, recType, recLabel, 50, confCol||'var(--amber)');
+  updateAllHeroes(sym, (document.getElementById('pgNmA')?.textContent?.replace(/.*— /,''))||sym, px, pv, recType, recLabel, 50, confCol||'var(--amber)');
 
   const errBox = `<div style="background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--amber);line-height:1.6">
     ⚠️ GPT-4o analysis unavailable — showing technical signals only. Check OPENAI_API_KEY in Render environment.
